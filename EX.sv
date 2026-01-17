@@ -1,4 +1,4 @@
-module ALU(
+module ALU(                                                     // Arithmetic Logic Unit
     input logic [31:0] SrcA, SrcB,
     input logic [3:0] ALUControl,
     input logic [3:0] funct3,
@@ -56,7 +56,7 @@ assign Target_Address = Address + imm;
 
 endmodule
 
-module SrcBMux(
+module SrcBMux(                                                     // Source B Mux
     input logic [31:0] RD2,imm,
     input logic SrcBSelect,
     output logic [31:0] SrcB
@@ -65,7 +65,7 @@ module SrcBMux(
 assign SrcB = (SrcBSelect ? imm : RD2);
 endmodule
 
-module SrcAMux(
+module SrcAMux(                                                     // Source A Mux
     input logic [31:0] RD1,Address,
     input logic SrcASelect,
     output logic [31:0] SrcA
@@ -74,14 +74,15 @@ module SrcAMux(
 assign SrcA = (SrcASelect ? Address : RD1);
 endmodule
 
-module Branch_Producer import Pkg::*;(
+module Branch_Producer import RPackage::*;(
     input ctrl,
     input logic [2:0] funct3,
     input Zero, SLTFlagSigned, SLTFlagUnsigned,
-    output logic Branch_taken
+    output logic Branch_taken,
+    output logic [1:0] PCNext_select
 ); 
 
-logic [1:0] PCNext_select;
+
 
 always_comb begin 
     Branch_taken = 0;
