@@ -1,9 +1,9 @@
-module ProgramCounterMux(
+module ProgramCounterMux import Pkg::*;(
     
     input logic     [31:0]      PC4,
     input logic     [31:0]      ALUResult,
     input logic     [31:0]      Target_Address,
-    input Pkg::pc_next_select_t PCNext_select,                     
+    input pc_next_select_t PCNext_select,                     
     output logic    [31:0]      PCNext
 );
 
