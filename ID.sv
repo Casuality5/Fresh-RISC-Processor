@@ -112,7 +112,7 @@ always_comb begin
 end
 endmodule
 
-module Decoder import RPackage::*;(                             // Main Decoder
+module Decoder import Pkg::*;(                             // Main Decoder
     
     input logic [6:0] Opcode,
     output bundle_decode_t ctrl
@@ -250,7 +250,7 @@ always_comb begin
 end
 endmodule
 
-module ALU_Decoder import RPackage::*;(                                             // ALU Decoder
+module ALU_Decoder import Pkg::*;(                                             // ALU Decoder
     
     input                   alu_op_t ALUOp,
     input logic [2:0]       funct3,

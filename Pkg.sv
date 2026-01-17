@@ -59,6 +59,5 @@ package Pkg;
         logic Jump;
         logic ALUSrcA;
         logic ALUSrcB;
-        pc_next_select_t PCNext_select;
     } bundle_decode_t;
 endpackage
