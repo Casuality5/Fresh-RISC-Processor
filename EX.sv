@@ -74,8 +74,8 @@ module SrcAMux(                                                     // Source A 
 assign SrcA = (SrcASelect ? Address : RD1);
 endmodule
 
-module Branch_Producer import RPackage::*;(
-    input ctrl,
+module Branch_Producer import Pkg::*;(
+    input bundle_decode_t ctrl,
     input logic [2:0] funct3,
     input Zero, SLTFlagSigned, SLTFlagUnsigned,
     output logic Branch_taken,
