@@ -111,7 +111,7 @@ always_comb begin
         end
 
         OP_JAL: begin // JAL
-            ctrl.Re
+            ctrl.RegW=0;
             ctrl.MemW=0;
             ctrl.Branch=0;
             ctrl.Jump=1;
@@ -122,7 +122,7 @@ always_comb begin
         end
 
         OP_JALR: begin // JALR
-            ctrl.Re     
+            ctrl.RegW=0;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=1;     
