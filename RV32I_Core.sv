@@ -3,10 +3,72 @@ module RV32I_Core import Pkg::*;(
     input logic reset
 );
 
-// IF Stage
-logic [31:0] PC_f, PC4_f, instr_f, PCNext_f;
+// Wirings
+logic [31:0] Address_f;
+logic [31:0] PC_f;
+logic [31:0] PC4_f;
+logic [31:0] instr_f;
+logic [31:0] PCNext_f;
+
 pc_next_select_t PCNext_select_f;
 
+logic [31:0] instr_d;
+logic [31:0] imm_d;
+logic [31:0] RD1_d;
+logic [31:0] RD2_d;
+logic [31:0] Address_d;
+logic [31:0] PC4_d;
+
+ctrl_t  ctrl_d;        // assuming structured control bundle
+logic [1:0] ALUOp_d;
+logic [3:0] ALUControl_d;
+
+logic [31:0] instr_e;
+logic [31:0] imm_e;
+logic [31:0] Address_e;
+logic [31:0] PC4_e;
+logic [31:0] RD1_e;
+logic [31:0] RD2_e;
+
+logic [31:0] SrcA_e;
+logic [31:0] SrcB_e;
+logic [31:0] ALUResult_e;
+logic [31:0] Target_Address_e;
+
+logic [3:0]  ALUControl_e;
+logic        SrcASelect_e;
+logic        SrcBSelect_e;
+
+logic        Zero_e;
+logic        SLTFlagSigned_e;
+logic        SLTFlagUnsigned_e;
+
+logic        Branch_taken_e;
+pc_next_select_t PCNext_select_e;
+
+ctrl_t ctrl_e;
+
+logic [31:0] instr_m;
+logic [31:0] ALUResult_m;
+logic [31:0] DataMemoryAddress_m;
+logic [31:0] WD_m;
+logic [31:0] DataMemoryRead_m;
+logic [31:0] FinalDataMemoryRead_m;
+logic [31:0] PC4_m;
+
+pc_next_select_t PCNext_select_m;
+ctrl_t ctrl_m;
+
+logic [31:0] ALUResult_w;
+logic [31:0] FinalDataMemoryRead_w;
+logic [31:0] PC4_w;
+logic [31:0] Result_w;
+
+result_select_t ResultSelect_w;
+ctrl_t ctrl_w;
+
+
+// IF Stage
 ProgramCounterMux pcmux(
     .PC4(PC4_f),
     .ALUResult(ALUResult_w),
@@ -133,19 +195,21 @@ EXMEMRegister exmem(
     .clk(clk),
     .reset(reset),
     .DataMemoryAddress_e(DataMemoryAddress_e),
+    .WD_e(WD_e)
     .PCNext_select_e(PCNext_select_e),
     .ctrl_e(ctrl_e),
     .DataMemoryAddress_m(DataMemoryAddress_m),
-    .PC4_m(PC4_m)
+    .WD_m(WD_m),
+    .PC4_m(PC4_m),
     .PCNext_select_m(PCNext_select_m),
-    .ctrl_m.(ctrl_m)
+    .ctrl_m(ctrl_m)
 );
 // Mem Stage
 
 DataMemory dm(
     .clk(clk),
     .reset(reset),
-    .WE(ctrl.MemW),
+    .WE(ctrl_m.MemW),
     .funct3(instr_m[14:12]),
     .DataMemoryAddress(DataMemoryAddress_m),
     .WD(WD_m),
@@ -154,7 +218,7 @@ DataMemory dm(
 
 Loadtype ld(
     .DataMemoryRead(DataMemoryRead_m),
-    .ALUResult(ALUResult_m),
+    .ALUResult(DataMemoryAddress_m),
     .funct3(instr_m[14:12]),
     .FinalDataMemoryRead(FinalDataMemoryRead_m)
 );
@@ -179,7 +243,5 @@ ResultMux rm(
     .ResultSelect(ResultSelect_w),
     .Result(Result_w)
 );
-
-
 
 endmodule
