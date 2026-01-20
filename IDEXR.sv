@@ -1,4 +1,4 @@
-module IDEXRegister import Pkg::* (
+module IDEXRegister import Pkg::*;(
     input logic clk,
     input logic reset,
     input logic [31:0] imm_d,
