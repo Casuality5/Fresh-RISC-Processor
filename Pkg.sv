@@ -53,7 +53,6 @@ package Pkg;
         imm_src_t       ImmSrc;
         result_mux_t    ResultSelect;
         logic RegW;
-        logic MemR;
         logic MemW;
         logic Branch;
         logic Jump;

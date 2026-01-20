@@ -56,7 +56,6 @@ always_comb begin
     case (Opcode) 
         OP_R: begin // R- Type
             ctrl.RegW=1;     
-            ctrl.MemR=0;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
@@ -68,7 +67,6 @@ always_comb begin
 
         OP_IALU: begin // I- Type ALU
             ctrl.RegW=1;     
-            ctrl.MemR=0;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
@@ -80,7 +78,6 @@ always_comb begin
 
         OP_I: begin // Load
             ctrl.RegW=1;     
-            ctrl.MemR=1;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
@@ -92,7 +89,6 @@ always_comb begin
 
         OP_S: begin // Store
             ctrl.RegW=0;     
-            ctrl.MemR=0;     
             ctrl.MemW=1;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
@@ -104,7 +100,6 @@ always_comb begin
 
         OP_B: begin // Branch- Type
             ctrl.RegW=0;     
-            ctrl.MemR=0;     
             ctrl.MemW=0;     
             ctrl.Branch=1;       
             ctrl.Jump=0;     
@@ -116,8 +111,7 @@ always_comb begin
         end
 
         OP_JAL: begin // JAL
-            ctrl.RegW=1;
-            ctrl.MemR=0;
+            ctrl.Re
             ctrl.MemW=0;
             ctrl.Branch=0;
             ctrl.Jump=1;
@@ -128,8 +122,7 @@ always_comb begin
         end
 
         OP_JALR: begin // JALR
-            ctrl.RegW=1;
-            ctrl.MemR=0;     
+            ctrl.Re     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=1;     
@@ -141,7 +134,6 @@ always_comb begin
 
         OP_LUI: begin // LUI
             ctrl.RegW=1;     
-            ctrl.MemR=0;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
@@ -153,7 +145,6 @@ always_comb begin
 
         OP_AUIPC: begin // AUIPC
             ctrl.RegW=1;     
-            ctrl.MemR=0;     
             ctrl.MemW=0;     
             ctrl.Branch=0;       
             ctrl.Jump=0;     
