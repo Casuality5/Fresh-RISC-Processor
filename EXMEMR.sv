@@ -20,16 +20,14 @@ always_ff @(posedge clk) begin
         Target_Address_m        <= 0;
         WD_m                    <= 0;
         PC4_m                   <= 0;
-        ctrl_m.MemW            <= 0;
-        ctrl_m.ResultSelect     <= RESULT_ALU;
+        ctrl_m                  <= 0;
         PCNext_select_m         <= STEP_FORWARD;
     end else begin
         DataMemoryAddress_m      <= DataMemoryAddress_e;
         Target_Address_m         <= Target_Address_e
         WD_m                     <= WD_e;
         PC4_m                    <= PC4_e;
-        ctrl_m.MemW              <= ctrl_e.MemW
-        ctrl_m.ResultSelect      <= ctrl_e.ResultSelect;
+        ctrl_m                   <= ctrl_e;
         PCNext_select_m          <= PCNext_select_e;
     end
 end
