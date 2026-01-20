@@ -5,12 +5,12 @@ module RV32I_Core import Pkg::*;(
 
 // IF Stage
 logic [31:0] PC_f, PC4_f, instr_f, PCNext_f;
-logic [1:0]  pc_next_select_t PCNext_select_f;
+pc_next_select_t PCNext_select_f;
 
 ProgramCounterMux pcmux(
     .PC4(PC4_f),
-    .ALUResult(ALUResult_f),
-    .Target_Address(Target_Address_f),
+    .ALUResult(ALUResult_w),
+    .Target_Address(Target_Address_e),
     .PCNext_select(PCNext_select_f), // Keep check
     .PCNext(PCNext_f)
 );
@@ -65,9 +65,9 @@ ALU_Decoder adec(
 RegisterFile rf(
     .clk(clk),
     .reset(reset),
-    .WE3(),
+    .WE3(ctrl.RegW),
     .A1(instr_d[19:15]), .A2(instr_d[24:20]), .A3(instr_d[11:7]),
-    .WD3(), .RD1(RD1_d), .RD2(RD2_d) 
+    .WD3(Result_w), .RD1(RD1_d), .RD2(RD2_d) 
 );
 
 IDEXRegister idex(
@@ -101,7 +101,8 @@ ALU alu(
 
 PCTarget pct(
     .Address(Address_e),
-    .imm(imm_e)
+    .imm(imm_e),
+    .Target_Address(Target_Address_e)
 );
 
 SrcBMux srcb(
@@ -126,36 +127,25 @@ Branch_Producer bp(
     .SLTFlagUnsigned(SLTFlagUnsigned_e),
     .Branch_taken(Branch_taken_e),
     .PCNext_select(PCNext_select_e)
-)
+);
 
 EXMEMRegister exmem(
     .clk(clk),
     .reset(reset),
-    .ALUResult_e(ALUResult_e),
-    .RD2_e(RD2_e)
-    .rd_e(rd_e),
-    .MemR_e(MemR_e),
-    .MemW_e(MemW_e),
-    .RegW_e(RegW_e),
-    .ResultSelect_e(ResultSelect_e),
+    .DataMemoryAddress_e(DataMemoryAddress_e),
     .PCNext_select_e(PCNext_select_e),
-    .ALUResult_d(ALUResult_d),
-    .StoreData_m(StoreData_m),
-    .PC4_m(PC4_m),
-    .rd_m(rd_m),
-    .MemR_m(MemR_m),
-    .MemW_m(MemW_m),
-    .RegW_m(RegW_m),
-    .ResultSelect_m(ResultSelect_m),
-    .PCNext_select_m(PCNext_select_m)
+    .ctrl_e(ctrl_e),
+    .DataMemoryAddress_m(DataMemoryAddress_m),
+    .PC4_m(PC4_m)
+    .PCNext_select_m(PCNext_select_m),
+    .ctrl_m.(ctrl_m)
 );
-
 // Mem Stage
 
 DataMemory dm(
     .clk(clk),
     .reset(reset),
-    .WE(WE_m),
+    .WE(ctrl.MemW),
     .funct3(instr_m[14:12]),
     .DataMemoryAddress(DataMemoryAddress_m),
     .WD(WD_m),
