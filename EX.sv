@@ -1,7 +1,6 @@
 module ALU(                                                     // Arithmetic Logic Unit
     input logic [31:0] SrcA, SrcB,
     input logic [3:0] ALUControl,
-    input logic [3:0] funct3,
     output logic [31:0] ALUResult,
     output logic Zero, SLTFlagSigned, SLTFlagUnsigned
 );
