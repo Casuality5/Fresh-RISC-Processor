@@ -95,10 +95,8 @@ typedef struct packed {
     logic [31:0] Target_Address;
     logic [31:0] RD2;
     logic SrcBSelect;
-    logic [31:0] SrcB;
     logic [31:0] RD1;
     logic SrcASelect;
-    logic [31:0] SrcA;
     ALU_OP_Case        ALUOp;
     Imm_Src_Case       ImmSrc;
     Result_Mux_Case    ResultSelect;
