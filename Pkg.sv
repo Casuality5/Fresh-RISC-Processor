@@ -66,18 +66,15 @@ typedef struct packed {
     logic [31:0] instr;
     logic [31:0] imm;
     logic [3:0] ALUControl;
-    logic [6:0] Opcode;
     logic RegW;
     logic MemW;
     logic Branch;
     logic Jump;
     logic ALUSrcA;
     logic ALUSrcB;
-    logic WE3;
     logic [4:0] A1;
     logic [4:0] A2;
     logic [4:0] A3;
-    logic [31:0] WD3;
     logic [31:0] RD1;
     logic [31:0] RD2;
 } Decode_Bundle;
@@ -127,6 +124,7 @@ typedef struct packed {
     logic [31:0] FinalDataMemoryRead;
     logic [31:0] PC4;
     logic [31:0] Result;
+    logic  WE3;
 } WriteBack_Bundle;
 
 
