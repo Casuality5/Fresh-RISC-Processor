@@ -1,7 +1,8 @@
 import Pkg::*;
 
 module ProgramCounterMux(
-    
+    input logic            clk,
+    input logic            rst,
     input Decode_Bundle    DB,
     input Execute_Bundle   EB,
     input Memory_Bundle    MB,
