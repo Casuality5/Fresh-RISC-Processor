@@ -3,12 +3,12 @@ module ProgramCounterMux import Pkg::*;(
     input logic     [31:0]      PC4,
     input logic     [31:0]      ALUResult,
     input logic     [31:0]      Target_Address,
-    input pc_next_select_t PCNext_select,                     
+    input PC_Next_Select_Case   PCNext_Select,                     
     output logic    [31:0]      PCNext
 );
 
 always_comb begin 
-    case (PCNext_select)
+    case (PCNext_Select)
         STEP_FORWARD:                       PCNext = PC4;
 
         JUMP_TO_CALCULATED_REGISTER:        PCNext = ALUResult;
