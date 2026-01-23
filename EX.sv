@@ -75,7 +75,7 @@ endmodule
 
 module Branch_Producer import Pkg::*;(
     input bundle_decode_t ctrl,
-    input logic [2:0] funct3,
+    input logic [31:0] instr,
     input Zero, SLTFlagSigned, SLTFlagUnsigned,
     output logic Branch_taken,
     output logic [1:0] PCNext_select
@@ -87,7 +87,7 @@ always_comb begin
     Branch_taken = 0;
     PCNext_select = STEP_FORWARD;
     if (ctrl.Branch) begin
-        case (funct3) 
+        case (instr[14:12]) 
         BEQ:  Branch_taken = Zero;
         BNE:  Branch_taken = !Zero;
         BLT:  Branch_taken = SLTFlagSigned;
