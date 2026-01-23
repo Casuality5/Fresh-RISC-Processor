@@ -3,7 +3,7 @@ module DataMemory #(
     )(
     input  logic clk,
     input  logic WE,reset,
-    input logic [2:0] funct3,
+    input logic [31:0] instr,
     input  logic [31:0] DataMemoryAddress,   
     input  logic [31:0] WD,
     output logic [31:0] DataMemoryRead
@@ -26,7 +26,7 @@ always_comb begin
     MaskWord2 = 32'hFFFF_FFFF;
 
 
-    case(funct3)
+    case(instr[14:12])
         
         3'b000: begin 
                 case (DataMemoryAddress[1:0])
@@ -68,7 +68,7 @@ end
 always_ff @(posedge clk) begin
 
 if (WE && !reset) begin
-    if (funct3 == 3'b010)
+    if (instr[14:12] == 3'b010)
         dm[addr] <= WD;
     else
         dm[addr] <= (dm[addr] & MaskWord2) | MaskWord1;
@@ -80,7 +80,7 @@ endmodule
 module Loadtype import Pkg::*;(
     input logic [31:0] DataMemoryRead,
     input logic [31:0] ALUResult,
-    input logic [2:0] funct3,
+    input logic [31:0] instr,
     output logic [31:0] FinalDataMemoryRead
 );
 
@@ -110,7 +110,7 @@ always_comb begin
     
         endcase
     
-    case (funct3)
+    case (instr[14:12])
         LOAD_BYTE: FinalDataMemoryRead = {{24{Byte_Data[7]}},Byte_Data};
         
         LOAD_HALF: FinalDataMemoryRead = {{16{Half_Data[15]}},Half_Data};
