@@ -1,110 +1,72 @@
-module ALU(                                                     // Arithmetic Logic Unit
-    input logic [31:0] SrcA, SrcB,
-    input logic [3:0] ALUControl,
-    output logic [31:0] ALUResult,
-    output logic Zero, SLTFlagSigned, SLTFlagUnsigned
+import Pkg::*; 
+
+module Execute (
+    input  Decode_Bundle  DB,
+    output Execute_Bundle EB
 );
-    localparam ADD  = 4'h0;
-    localparam SUB  = 4'h1;
-    localparam AND  = 4'h2;
-    localparam OR   = 4'h3;
-    localparam XOR  = 4'h4;
-    localparam SLL  = 4'h5;
-    localparam SRL  = 4'h6;
-    localparam SRA  = 4'h7;
-    localparam SLT  = 4'h8;
-    localparam SLTU = 4'h9;
+    logic [31:0] src_a, src_b;
+    logic [31:0] immediate;
+    logic [31:0] address;
+    logic        sltfs, sltfu, zero;
 
-always_comb begin 
-    case (ALUControl)
-        ADD:        ALUResult = SrcA + SrcB;
+    assign address   = DB.Address;
+    assign immediate = DB.imm;
+    assign src_a = (DB.ALUSrcA ? address   : DB.RD1);
+    assign src_b = (DB.ALUSrcB ? immediate : DB.RD2);
 
-        SUB:        ALUResult = SrcA - SrcB;
-
-        AND:        ALUResult = SrcA & SrcB;
-
-        OR:         ALUResult = SrcA | SrcB;
-
-        XOR:        ALUResult = SrcA ^ SrcB;
-
-        SLL:        ALUResult = SrcA << SrcB[4:0];
-
-        SRL:        ALUResult = SrcA >> SrcB[4:0];
-
-        SRA:        ALUResult = $signed(SrcA) >>> SrcB[4:0];
-
-        SLT:       ALUResult = (($signed(SrcA) < ($signed(SrcB)))? 1 : 0);
-
-        SLTU:      ALUResult = ((SrcA < SrcB)? 1 : 0);
-
-        default:    ALUResult = 32'b0;
-    endcase
-
-    Zero = (ALUResult == 32'b0);
-    SLTFlagSigned   =   (($signed(SrcA) < ($signed(SrcB)))? 1 : 0);
-    SLTFlagUnsigned =   ((SrcA < SrcB)? 1 : 0);
-end
-endmodule
-
-module PCTarget(
-    input logic [31:0] Address, imm,
-    output logic [31:0] Target_Address
-);
-
-assign Target_Address = Address + imm;
-
-endmodule
-
-module SrcBMux(                                                     // Source B Mux
-    input logic [31:0] RD2,imm,
-    input logic SrcBSelect,
-    output logic [31:0] SrcB
-);
-
-assign SrcB = (SrcBSelect ? imm : RD2);
-endmodule
-
-module SrcAMux(                                                     // Source A Mux
-    input logic [31:0] RD1,Address,
-    input logic SrcASelect,
-    output logic [31:0] SrcA
-);
-
-assign SrcA = (SrcASelect ? Address : RD1);
-endmodule
-
-module Branch_Producer import Pkg::*;(
-    input bundle_decode_t ctrl,
-    input logic [31:0] instr,
-    input Zero, SLTFlagSigned, SLTFlagUnsigned,
-    output logic Branch_taken,
-    output logic [1:0] PCNext_select
-); 
+ 
+    always_comb begin 
+        EB = '0; 
 
 
-
-always_comb begin 
-    Branch_taken = 0;
-    PCNext_select = STEP_FORWARD;
-    if (ctrl.Branch) begin
-        case (instr[14:12]) 
-        BEQ:  Branch_taken = Zero;
-        BNE:  Branch_taken = !Zero;
-        BLT:  Branch_taken = SLTFlagSigned;
-        BGE:  Branch_taken = !SLTFlagSigned || Zero;
-        BLTU: Branch_taken = SLTFlagUnsigned;
-        BGEU: Branch_taken = !SLTFlagUnsigned || Zero;
+        case (DB.ALUControl)
+            4'h0: EB.ALUResult = src_a + src_b;
+            4'h1: EB.ALUResult = src_a - src_b;
+            4'h2: EB.ALUResult = src_a & src_b;
+            4'h3: EB.ALUResult = src_a | src_b;
+            4'h4: EB.ALUResult = src_a ^ src_b;
+            4'h5: EB.ALUResult = src_a << src_b[4:0];
+            4'h6: EB.ALUResult = src_a >> src_b[4:0];
+            4'h7: EB.ALUResult = $signed(src_a) >>> src_b[4:0];
+            4'h8: EB.ALUResult = (($signed(src_a) < $signed(src_b)) ? 32'h1 : 32'h0);
+            4'h9: EB.ALUResult = ((src_a < src_b) ? 32'h1 : 32'h0);
+            default: EB.ALUResult = 32'b0;
         endcase
-    end
-    if (ctrl.Jump) begin
-        PCNext_select = (ctrl.JALR) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
-        end
-    else if (Branch_taken) begin
-        PCNext_select = JUMP_TO_LABEL;
-        end
-    else begin
-        PCNext_select = STEP_FORWARD;
-        end
- end
-endmodule
 
+        zero  = (EB.ALUResult == 32'b0);
+        sltfs = ($signed(src_a) < $signed(src_b));
+        sltfu = (src_a < src_b);
+
+
+        EB.Branch_taken = 0;
+        if (DB.Branch) begin
+            case (DB.instr[14:12]) 
+                3'b000: EB.Branch_taken = zero;
+                3'b001: EB.Branch_taken = !zero;
+                3'b100: EB.Branch_taken = sltfs;
+                3'b101: EB.Branch_taken = !sltfs || zero;
+                3'b110: EB.Branch_taken = sltfu;
+                3'b111: EB.Branch_taken = !sltfu || zero;
+                default: EB.Branch_taken = 0;
+            endcase
+        end
+
+        if (DB.Jump) begin
+            EB.PCNext_Select = (DB.instr[6:0] == 7'b1100111) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
+        end else if (EB.Branch_taken) begin
+            EB.PCNext_Select = JUMP_TO_LABEL;
+        end else begin
+            EB.PCNext_Select = STEP_FORWARD;
+        end
+
+        EB.Target_Address = address + immediate;
+        EB.instr          = DB.instr;      
+        EB.RD2            = DB.RD2;
+        EB.A3             = DB.A3;         
+        EB.RegW           = DB.RegW;       
+        EB.MemW           = DB.MemW;       
+        EB.ResultSelect   = DB.ResultSelect;
+        EB.PC4            = DB.PC4;
+    end
+
+endmodule

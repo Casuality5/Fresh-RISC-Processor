@@ -65,6 +65,7 @@ typedef struct packed {
     Result_Mux_Case    ResultSelect;
     logic [31:0] instr;
     logic [31:0] imm;
+    logic [31:0] Address;
     logic [3:0] ALUControl;
     logic RegW;
     logic MemW;
@@ -77,6 +78,7 @@ typedef struct packed {
     logic [4:0] A3;
     logic [31:0] RD1;
     logic [31:0] RD2;
+    logic [31:0] PC4;
 } Decode_Bundle;
 
 typedef struct packed {
@@ -93,6 +95,8 @@ typedef struct packed {
     logic [31:0] RD2;
     logic SrcBSelect;
     logic [31:0] RD1;
+    logic [31:0] PC4;
+    logic [4:0] A3;
     logic SrcASelect;
     ALU_OP_Case        ALUOp;
     Imm_Src_Case       ImmSrc;
