@@ -4,20 +4,20 @@ package Pkg;
         RESULT_ALU = 2'b00,
         RESULT_MEM = 2'b01,
         RESULT_PC =  2'b10
-        } result_mux_t;
+    } Result_Mux_Case;
     
     typedef enum logic [1:0] {
         FORCE_ADD           = 2'b00,
         FORCE_SUB           = 2'b01,
         CHECK_FUNCT_CODE    = 2'b10,
         I_TYPE_MATH         = 2'b11
-        } alu_op_t;
+    } ALU_OP_Case;
 
     typedef enum logic [1:0] { 
         STEP_FORWARD                        = 2'b00,
         JUMP_TO_CALCULATED_REGISTER         = 2'b01,
         JUMP_TO_LABEL                       = 2'b10
-        } pc_next_select_t;
+    } PC_Next_Select_Case;
 
     typedef enum logic [3:0] { 
         R       =     4'h0,
@@ -29,7 +29,7 @@ package Pkg;
         JALR    =     4'h6,
         LUI     =     4'h7,
         AUIPC   =     4'h8
-        } imm_src_t;
+    } Imm_Src_Case;
     
     typedef enum logic [2:0] {
         BEQ     =   3'b000,
@@ -38,7 +38,7 @@ package Pkg;
         BGE     =   3'b101,
         BLTU    =   3'b110,
         BGEU    =   3'b111
-    } branch_type_t;
+    } Branch_Types_Case;
 
     typedef enum logic [2:0] {
         LOAD_BYTE = 3'b000,
@@ -46,17 +46,90 @@ package Pkg;
         LOAD_WORD = 3'b010,
         LOAD_BYTE_UNSIGNED = 3'b100,
         LOAD_HALF_UNSIGNED = 3'b101
-    } load_type_t;
+    } Load_Type_Case;
 
-    typedef struct packed {
-        alu_op_t        ALUOp;
-        imm_src_t       ImmSrc;
-        result_mux_t    ResultSelect;
-        logic RegW;
-        logic MemW;
-        logic Branch;
-        logic Jump;
-        logic ALUSrcA;
-        logic ALUSrcB;
-    } bundle_decode_t;
+typedef struct packed {
+    PC_Next_Select_Case PCNext_Select;
+    logic [31:0] PC4;
+    logic [31:0] ALUResult;
+    logic Target_Address;
+    logic [31:0] PCNext;
+    logic [31:0] Address;
+    logic [31:0] instr;
+
+} Fetch_Bundle;
+
+typedef struct packed {
+    ALU_OP_Case        ALUOp;
+    Imm_Src_Case       ImmSrc;
+    Result_Mux_Case    ResultSelect;
+    logic [31:0] instr;
+    logic [31:0] imm;
+    logic [3:0] ALUControl;
+    logic [6:0] Opcode;
+    logic RegW;
+    logic MemW;
+    logic Branch;
+    logic Jump;
+    logic ALUSrcA;
+    logic ALUSrcB;
+    logic WE3;
+    logic [4:0] A1;
+    logic [4:0] A2;
+    logic [4:0] A3;
+    logic [31:0] WD3;
+    logic [31:0] RD1;
+    logic [31:0] RD2;
+} Decode_Bundle;
+
+typedef struct packed {
+    logic [31:0] SrcA;
+    logic [31:0] SrcB;
+    logic [3:0] ALUControl;
+    logic [31:0] ALUResult;
+    logic Zero;
+    logic SLTFlagSigned;
+    logic SLTFlagUnsigned;
+    logic [31:0] Address;
+    logic [31:0] imm;
+    logic [31:0] Target_Address;
+    logic [31:0] RD2;
+    logic SrcBSelect;
+    logic [31:0] SrcB;
+    logic [31:0] RD1;
+    logic SrcASelect;
+    logic [31:0] SrcA;
+    ALU_OP_Case        ALUOp;
+    Imm_Src_Case       ImmSrc;
+    Result_Mux_Case    ResultSelect;
+    PC_Next_Select_Case PCNext_Select;
+    logic RegW;
+    logic MemW;
+    logic Branch;
+    logic Jump;
+    logic ALUSrcA;
+    logic ALUSrcB;
+    logic [31:0] instr;
+    logic Branch_taken;
+} Execute_Bundle;
+
+typedef struct packed {
+    logic WE;
+    logic [31:0] instr;
+    logic [31:0] DataMemoryAddress;
+    logic [31:0] WD;
+    logic [31:0] DataMemoryRead;
+    logic [31:0] ALUResult;
+    logic [31:0] FinalDataMemoryRead;
+} Memory_Bundle;
+
+typedef struct packed {
+    Result_Mux_Case ResultSelect;
+    logic [31:0] ALUResult;
+    logic [31:0] FinalDataMemoryRead;
+    logic [31:0] PC4;
+    logic [31:0] Result;
+} WriteBack_Bundle;
+
+
 endpackage
