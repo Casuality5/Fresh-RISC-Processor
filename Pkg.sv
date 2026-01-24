@@ -135,6 +135,8 @@ typedef struct packed {
     logic [31:0] PC4;
     logic [31:0] Result;
     logic  WE3;
+    logic [4:0] A3;
+    logic RegW;
 } WriteBack_Bundle;
 
 
