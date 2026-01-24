@@ -1,27 +1,15 @@
-module MEMWBRegister (
-    input logic clk,
-    input logic reset,
-    input logic [31:0] ALUResult_m,
-    input logic [31:0] FinalDataMemoryRead_m,
-    input logic [31:0] PC4_m,
-    input bundle_decode_t ctrl_m,
-    output logic [31:0] ALUResult_w,
-    output logic [31:0] FinalDataMemoryRead_w,
-    output logic [31:0] PC4_w,
-    output bundle_decode_t ctrl_w
+module reg_MEM_WB (
+    input  logic           clk, rst,
+    input  Memory_Bundle   in,   // Data coming from Memory_Stage
+    output Memory_Bundle   out   // Data going to ResultMux (Writeback)
 );
 
-always_ff @(posedge clk) begin 
-    if (reset) begin
-        ALUResult_w <= 0;
-        FinalDataMemoryRead_w <= 0;
-        PC4_w <= 0;
-        ctrl_w <= 0;
-    end else begin 
-        ALUResult_w <= ALUResult_m;
-        FinalDataMemoryRead_w <= FinalDataMemoryRead_m;
-        PC4_w <= PC4_m;
-        ctrl_w <= ctrl_m;
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            out <= '0; // Clear the trunk on reset
+        end else begin
+            out <= in;  // Hand off the trunk to the final stage
+        end
     end
-end
+
 endmodule
