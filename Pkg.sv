@@ -120,6 +120,12 @@ typedef struct packed {
     logic [31:0] DataMemoryRead;
     logic [31:0] ALUResult;
     logic [31:0] FinalDataMemoryRead;
+    logic [31:0] ReadData;
+    logic [4:0] A3;
+    logic RegW;
+    Result_Mux_Case    ResultSelect;
+    logic [31:0] PC4;
+    
 } Memory_Bundle;
 
 typedef struct packed {
