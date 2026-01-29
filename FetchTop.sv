@@ -7,7 +7,7 @@ module FetchTop(
 );
 
 
-logic [31:0] PC4_local;
+logic [31:0] PC4_global;
 logic [31:0] PCNext_local;
 logic [31:0] Address_global;
 
@@ -15,7 +15,7 @@ logic [31:0] Address_global;
 
 
 ProgramCounterMux PCM_Instance(
-    .PC4(PC4_local),
+    .PC4(PC4_global),
     .ALUResult(EB.ALUResult),
     .Target_Address(EB.Target_Address),
     .PCNext_Select(EB.PCNext_Select),
@@ -31,7 +31,7 @@ ProgramCounter PC_Instance(
 
 PCPlus4 PC4_Instance(
     .Address(Address_global),
-    .PC4(PC4_local)
+    .PC4(PC4_global)
 );
 
 InstructionMemory IM_Instance(
@@ -41,5 +41,6 @@ InstructionMemory IM_Instance(
 
 
 assign FB.Address = Address_global;
+assign FB.PC4     = PC4_global;
 
 endmodule
