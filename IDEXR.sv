@@ -1,10 +1,12 @@
+import Pkg::*;
+
 module reg_ID_EX (
     input  logic clk, rst,
-    input  Decode_Bundle in,
-    output Decode_Bundle out
+    input  Decode_Bundle d,
+    output Decode_Bundle q
 );
     always_ff @(posedge clk) begin
-        if (rst) out <= '0;
-        else     out <= in;
+        if (rst) q <= '0;
+        else     q <= d;
     end
 endmodule

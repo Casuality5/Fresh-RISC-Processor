@@ -1,65 +1,54 @@
-module ProgramCounterMux import Pkg::*;(
-    
-    input logic     [31:0]      PC4,
-    input logic     [31:0]      ALUResult,
-    input logic     [31:0]      Target_Address,
-    input PC_Next_Select_Case   PCNext_Select,                     
-    output logic    [31:0]      PCNext
+import Pkg::*;
+
+module Fetch #(
+    parameter Size = 512
+)(
+    input logic            clk,
+    input logic            rst,
+    input PC_Next_Select_Case PCNext_Select,
+    input logic [31:0] Target_Address,
+    input logic [31:0] ALUResult_to_Fetch,
+    input Execute_Bundle EB,
+    output Fetch_Bundle    FB
 );
+
+//logic [31:0] pc_next;
+logic [31:0] instr_out;
+logic [31:0] im[Size-1:0];
+
+assign FB.PC4 = FB.Address + 32'h4;
 
 always_comb begin 
+    FB.PCNext = '0;
     case (PCNext_Select)
-        STEP_FORWARD:                       PCNext = PC4;
+        STEP_FORWARD:                       FB.PCNext = FB.PC4;
 
-        JUMP_TO_CALCULATED_REGISTER:        PCNext = ALUResult;
+        JUMP_TO_CALCULATED_REGISTER:        FB.PCNext = ALUResult_to_Fetch;
 
-        JUMP_TO_LABEL:                      PCNext = Target_Address;
-
-        default:                            PCNext = PC4;
+        JUMP_TO_LABEL:                      FB.PCNext = Target_Address;
     endcase
 end
-endmodule
 
-module ProgramCounter(
-    input logic                 clk,
-    input logic                 reset,
-    input logic     [31:0]      PCNext,
-    output logic    [31:0]      Address
-);
 
-always_ff @ (posedge clk or posedge reset) begin 
-    if (reset) begin 
-        Address <= 32'b0;
+always_ff @ (posedge clk or posedge rst) begin 
+    if (rst) begin 
+        FB.Address <= 32'b0;
     end
 
     else begin 
-        Address <= PCNext;
+        FB.Address <= FB.PCNext;
     end
 end
-endmodule
-
-module PCPlus4(
-    input logic [31:0] Address,
-    output logic [31:0] PC4
-);
-
-assign PC4 = Address + 32'h4;
-
-endmodule
-
-module InstructionMemory #(
-    parameter Size = 1024
-)(
-    input logic [31:0] Address,
-    output logic [31:0] instr
-);
-
-logic [31:0] im[Size-1:0];
 
 initial begin
-    $readmemh("C:/Users/creat/RV32I/RV32I.srcs/sim_1/new/Program.mem",im);
+    $readmemh("Program.mem",im);
 end
 
-assign instr = im[Address[31:2] % Size];
+assign instr_out = im[FB.Address[31:2] % Size];
 
+
+//assign FB.PCNext = pc_next;
+//assign FB.Address = address;
+//assign FB.PC4 = pc4;
+assign FB.instr = instr_out;
 endmodule

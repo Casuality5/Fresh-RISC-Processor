@@ -1,14 +1,16 @@
+import Pkg::*;
+
 module reg_MEM_WB (
     input  logic           clk, rst,
-    input  Memory_Bundle   in,   // Data coming from Memory_Stage
-    output Memory_Bundle   out   // Data going to ResultMux (Writeback)
+    input  Memory_Bundle   d,
+    output Memory_Bundle   q
 );
 
     always_ff @(posedge clk) begin
         if (rst) begin
-            out <= '0; // Clear the trunk on reset
+            q <= '0; 
         end else begin
-            out <= in;  // Hand off the trunk to the final stage
+            q <= d;
         end
     end
 

@@ -1,90 +1,125 @@
 import Pkg::*;
 
-module Memory #(parameter Size = 1024) (
-    input  logic           clk, reset,
-    input  Execute_Bundle  EB, // Incoming trunk
-    output Memory_Bundle   MB  // Outgoing trunk
+module Memory #(
+    parameter Size = 1024
+    )(
+    input Execute_Bundle EB,
+    output Memory_Bundle MB,
+    input  logic clk,
+    input  logic rst
 );
 
-    // --- Workbench ---
-    logic [31:0] dm [Size-1:0];
-    logic [31:0] raw_word;
-    logic [31:0] final_read_data;
-    logic [31:0] mask_data, mask_inv;
-    logic [7:0]  byte_val;
-    logic [15:0] half_val;
-    logic [31:0] addr;
-
-    assign addr = EB.ALUResult[31:2]; // Word-aligned address
-    assign raw_word = dm[addr];      // Read the whole word first
-
-    // 1. STORE LOGIC (The "Masking" workbench)
-    always_comb begin
-        mask_data = 32'b0;
-        mask_inv  = 32'hFFFF_FFFF;
-
-        case(EB.instr[14:12])
-            3'b000: begin // SB (Store Byte)
-                case (EB.ALUResult[1:0])
-                    2'h0: begin mask_data = {24'b0, EB.RD2[7:0]};        mask_inv = 32'hFFFF_FF00; end
-                    2'h1: begin mask_data = {16'b0, EB.RD2[7:0], 8'b0};  mask_inv = 32'hFFFF_00FF; end
-                    2'h2: begin mask_data = {8'b0,  EB.RD2[7:0], 16'b0}; mask_inv = 32'hFF00_FFFF; end
-                    2'h3: begin mask_data = {EB.RD2[7:0], 24'b0};        mask_inv = 32'h00FF_FFFF; end
-                endcase
-            end
-            3'b001: begin // SH (Store Half)
-                case(EB.ALUResult[1])
-                    1'b0: begin mask_data = {16'b0, EB.RD2[15:0]};       mask_inv = 32'hFFFF_0000; end
-                    1'b1: begin mask_data = {EB.RD2[15:0], 16'b0};       mask_inv = 32'h0000_FFFF; end
-                endcase
-            end
-            default: begin mask_data = EB.RD2; mask_inv = 32'b0; end // SW (Store Word)
-        endcase
-    end
-
-    // 2. LOAD LOGIC (The "Extension" workbench)
-    always_comb begin
-        // Select Byte
-        case (EB.ALUResult[1:0])
-            2'b00: byte_val = raw_word[7:0];
-            2'b01: byte_val = raw_word[15:8];
-            2'b10: byte_val = raw_word[23:16];
-            2'b11: byte_val = raw_word[31:24];
-        endcase
-        // Select Half
-        half_val = (EB.ALUResult[1]) ? raw_word[31:16] : raw_word[15:0];
-
-        // Sign Extension
-        case (EB.instr[14:12])
-            LOAD_BYTE:          final_read_data = {{24{byte_val[7]}}, byte_val};
-            LOAD_HALF:          final_read_data = {{16{half_val[15]}}, half_val};
-            LOAD_WORD:          final_read_data = raw_word;
-            LOAD_BYTE_UNSIGNED: final_read_data = {24'b0, byte_val};
-            LOAD_HALF_UNSIGNED: final_read_data = {16'b0, half_val};
-            default:            final_read_data = raw_word;
-        endcase
-    end
-
-    // 3. PHYSICAL MEMORY WRITE
-    always_ff @(posedge clk) begin
-        if (EB.MemW && !reset) begin
-            if (EB.instr[14:12] == 3'b010) // SW
-                dm[addr] <= EB.RD2;
-            else
-                dm[addr] <= (raw_word & mask_inv) | mask_data;
+logic [31:0] DataMemoryRead;
+logic [31:0] dm[Size-1:0];
+logic [31:0] addr;
+assign addr = MB.ALUResult[31:2];
+assign DataMemoryRead=dm[MB.ALUResult[31:2]];
+logic [31:0] MaskWord1, MaskWord2;
+logic [7:0] Byte_Data;
+logic [15:0] Half_Data;
+initial begin
+        for (int i = 0; i < Size; i++) begin
+            dm[i] = 32'b0;
         end
     end
+always_comb begin
+    MB.WE = EB.WE;
+    MB.instr = EB.instr;
+    MB.WD = EB.RD2;
+    MB.RegW = EB.RegW;
+    MB.PC4 = EB.PC4;
+    MB.rd = EB.rd;
+    MB.ALUResult = EB.ALUResult;
+    MB.ResultSelect = EB.ResultSelect;
+    MaskWord1 = 32'b0;
+    MaskWord2 = 32'hFFFF_FFFF;
+    Byte_Data = 8'b0;
+    Half_Data = 16'b0;
+    MB.FinalDataMemoryRead = 32'b0;
 
-    // 4. PACKING THE TRUNK
-    always_comb begin
-        MB = '0;
-        MB.instr        = EB.instr;
-        MB.ALUResult    = EB.ALUResult;
-        MB.ReadData     = final_read_data; // The aligned/extended data
-        MB.A3           = EB.A3;
-        MB.RegW         = EB.RegW;
-        MB.ResultSelect = EB.ResultSelect;
-        MB.PC4          = EB.PC4;
-    end
+                                                                                                    
+    case(MB.instr[14:12])
+        
+        3'b000: begin 
+                case (MB.ALUResult[1:0])
+                    2'h0: begin MaskWord1 = {24'b0,MB.WD[7:0]};
+                          MaskWord2 = {{24{1'b1}},8'b0}; end
+                    
+                    2'h1: begin MaskWord1 = {16'b0,MB.WD[7:0],8'b0};
+                          MaskWord2 = {{16{1'b1}},8'b0,{8{1'b1}}}; end
+                    
+                    2'h2: begin MaskWord1 = {8'b0, MB.WD[7:0],16'b0};
+                          MaskWord2 = {{8{1'b1}}, 8'b0, {16{1'b1}}}; end
+                    
+                    2'h3: begin MaskWord1 = {MB.WD[7:0], 24'b0};
+                          MaskWord2 = {8'b0, {24{1'b1}}}; end
+
+                    default: begin MaskWord1 = {24'b0,MB.WD[7:0]};
+                          MaskWord2 = {{24{1'b1}},8'b0};
+                    end
+                    endcase
+                    
+                 
+                 end
+        3'b001: begin
+                case(MB.ALUResult[1])
+                    1'b0: begin MaskWord1 = {16'b0, MB.WD[15:0]};
+                          MaskWord2 = {{16{1'b1}}, 16'b0}; end
+                    
+                    1'b1: begin MaskWord1 = {MB.WD[15:0], 16'b0};
+                          MaskWord2 = {16'b0, {16{1'b1}}}; end
+                    endcase
+                
+                end
+        3'b010: begin // SW
+             MaskWord1 = MB.WD;
+             MaskWord2 = 32'h0000_0000;
+                 end
+
+
+        default: begin MaskWord1 = {24'b0,MB.WD[7:0]};
+                        MaskWord2 = {{24{1'b1}},8'b0}; end
+        endcase
+
+        case (MB.ALUResult[1:0])
+        2'b00: Byte_Data = DataMemoryRead[7:0];
+    
+        2'b01: Byte_Data = DataMemoryRead[15:8];
+    
+        2'b10: Byte_Data = DataMemoryRead[23:16];
+    
+        2'b11: Byte_Data = DataMemoryRead[31:24];
+    
+        endcase
+    
+    case (MB.ALUResult[1])
+        1'b0: Half_Data = DataMemoryRead[15:0];
+    
+        1'b1: Half_Data = DataMemoryRead[31:16];
+    
+        endcase
+    
+    case (MB.instr[14:12])
+        LOAD_BYTE: MB.FinalDataMemoryRead = {{24{Byte_Data[7]}},Byte_Data};
+        
+        LOAD_HALF: MB.FinalDataMemoryRead = {{16{Half_Data[15]}},Half_Data};
+        
+        LOAD_WORD: MB.FinalDataMemoryRead = DataMemoryRead;
+        
+        LOAD_BYTE_UNSIGNED: MB.FinalDataMemoryRead = {24'b0,Byte_Data};
+        
+        LOAD_HALF_UNSIGNED: MB.FinalDataMemoryRead = {16'b0,Half_Data};
+
+        default: begin MB.FinalDataMemoryRead = {{24{Byte_Data[7]}},Byte_Data}; end
+        endcase
+end
+
+always_ff @(posedge clk) begin
+  if (!rst && MB.WE) begin
+    dm[addr] <= MB.WD;
+  end
+end
+
+
 
 endmodule

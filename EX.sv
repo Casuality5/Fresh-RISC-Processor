@@ -2,71 +2,77 @@ import Pkg::*;
 
 module Execute (
     input  Decode_Bundle  DB,
-    output Execute_Bundle EB
+    output Execute_Bundle EB,
+    // Individual Fast-Path Outputs
+    output PC_Next_Select_Case PCNext_Select,
+    output logic [31:0]        Target_Address,
+    output logic [31:0]        ALUResult_to_Fetch
 );
     logic [31:0] src_a, src_b;
-    logic [31:0] immediate;
-    logic [31:0] address;
-    logic        sltfs, sltfu, zero;
+    logic        zero, sltfs, sltfu;
 
-    assign address   = DB.Address;
-    assign immediate = DB.imm;
-    assign src_a = (DB.ALUSrcA ? address   : DB.RD1);
-    assign src_b = (DB.ALUSrcB ? immediate : DB.RD2);
+    assign src_a = (DB.ALUSrcA ? DB.Address : DB.RD1);
+    assign src_b = (DB.ALUSrcB ? DB.imm     : DB.RD2);
+    
+    // Target Address calculation for Branches and JAL
+    assign Target_Address = DB.Address + DB.imm;
 
- 
     always_comb begin 
-        EB = '0; 
-
-
+        EB.instr        = DB.instr;      
+        EB.RD2           = DB.RD2;
+        EB.rd           = DB.rd;         
+        EB.RegW         = DB.RegW;       
+        EB.WE         = DB.MemW;       
+        EB.ResultSelect = DB.ResultSelect;
+        EB.PC4          = DB.PC4;
+        EB.Address      = DB.Address;
+        ALUResult_to_Fetch = EB.ALUResult;
+        
+        // ALU Math
         case (DB.ALUControl)
-            4'h0: EB.ALUResult = src_a + src_b;
-            4'h1: EB.ALUResult = src_a - src_b;
-            4'h2: EB.ALUResult = src_a & src_b;
-            4'h3: EB.ALUResult = src_a | src_b;
-            4'h4: EB.ALUResult = src_a ^ src_b;
-            4'h5: EB.ALUResult = src_a << src_b[4:0];
-            4'h6: EB.ALUResult = src_a >> src_b[4:0];
-            4'h7: EB.ALUResult = $signed(src_a) >>> src_b[4:0];
-            4'h8: EB.ALUResult = (($signed(src_a) < $signed(src_b)) ? 32'h1 : 32'h0);
-            4'h9: EB.ALUResult = ((src_a < src_b) ? 32'h1 : 32'h0);
+            ADD:  EB.ALUResult = src_a + src_b;
+            SUB:  EB.ALUResult = src_a - src_b;
+            ANDs: EB.ALUResult = src_a & src_b;
+            ORs:  EB.ALUResult = src_a | src_b;
+            XORs: EB.ALUResult = src_a ^ src_b;
+            SLL:  EB.ALUResult = src_a << src_b[4:0];
+            SRL:  EB.ALUResult = src_a >> src_b[4:0];
+            SRA:  EB.ALUResult = $signed(src_a) >>> src_b[4:0];
+            SLT:  EB.ALUResult = (($signed(src_a) < $signed(src_b)) ? 32'h1 : 32'h0);
+            SLTU: EB.ALUResult = ((src_a < src_b) ? 32'h1 : 32'h0);
             default: EB.ALUResult = 32'b0;
         endcase
 
-        zero  = (EB.ALUResult == 32'b0);
+        // Branch condition logic
+        zero  = ($signed(src_a) == $signed(src_b));
         sltfs = ($signed(src_a) < $signed(src_b));
         sltfu = (src_a < src_b);
 
-
-        EB.Branch_taken = 0;
+        EB.Branch_taken = 1'b0;
         if (DB.Branch) begin
-            case (DB.instr[14:12]) 
-                3'b000: EB.Branch_taken = zero;
-                3'b001: EB.Branch_taken = !zero;
-                3'b100: EB.Branch_taken = sltfs;
-                3'b101: EB.Branch_taken = !sltfs || zero;
-                3'b110: EB.Branch_taken = sltfu;
-                3'b111: EB.Branch_taken = !sltfu || zero;
-                default: EB.Branch_taken = 0;
+            case (DB.instr[14:12])
+                3'b000: EB.Branch_taken = zero;   // BEQ
+                3'b001: EB.Branch_taken = !zero;  // BNE
+                3'b100: EB.Branch_taken = sltfs;  // BLT
+                3'b101: EB.Branch_taken = !sltfs; // BGE
+                3'b110: EB.Branch_taken = sltfu;  // BLTU
+                3'b111: EB.Branch_taken = !sltfu; // BGEU
+                default: EB.Branch_taken = 1'b0;
             endcase
         end
 
+        // Redirection Logic (The Fast-Path Decision)
         if (DB.Jump) begin
-            EB.PCNext_Select = (DB.instr[6:0] == 7'b1100111) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
+            PCNext_Select = (DB.instr[6:0] == 7'b1100111) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
         end else if (EB.Branch_taken) begin
-            EB.PCNext_Select = JUMP_TO_LABEL;
+            PCNext_Select = JUMP_TO_LABEL;
         end else begin
-            EB.PCNext_Select = STEP_FORWARD;
+            PCNext_Select = STEP_FORWARD;
         end
 
-        EB.Target_Address = address + immediate;
-        EB.instr          = DB.instr;      
-        EB.RD2            = DB.RD2;
-        EB.A3             = DB.A3;         
-        EB.RegW           = DB.RegW;       
-        EB.MemW           = DB.MemW;       
-        EB.ResultSelect   = DB.ResultSelect;
-        EB.PC4            = DB.PC4;
+        // Pipeline Passthroughs
+        
     end
-
+    
+    assign EB.PC4 = DB.PC4;
 endmodule
