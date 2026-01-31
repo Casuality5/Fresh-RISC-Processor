@@ -1,0 +1,1 @@
+This is an implementation of a RV32I Pipelined processor by a passionate EE student. Currently this Processor is in development and next goal will be to introduce  hazard unit to actually increase throughput. I used NOPs in between the instructions to avoid hazards because "Functionality comes before Performance".
