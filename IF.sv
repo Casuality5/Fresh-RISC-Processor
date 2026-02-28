@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 import Pkg::*;
 
 module Fetch #(
@@ -32,7 +34,7 @@ end
 
 always_ff @ (posedge clk or posedge rst) begin 
     if (rst) begin 
-        FB.Address <= 32'b0;
+        FB.Address <= 32'h80000000;
     end
 
     else begin 
