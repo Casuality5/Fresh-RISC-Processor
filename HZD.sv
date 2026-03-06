@@ -5,15 +5,26 @@ module HazardUnit(
     input logic [4:0] rdW,
     input logic RegWriteM,
     input logic RegWriteW,
+    input logic [6:0] OPcodeE,
     output logic [1:0] ForwardAE,
-    output logic [1:0] ForwardBE
+    output logic [1:0] ForwardBE,
+    output logic StallF,
+    output logic StallD,
+    output logic FlushE
 );
 
+logic isLoadType;
+
+
+// Muxes have to be placed in the EX stage
 
 always_comb begin
 
     ForwardAE = 0;
     ForwardBE = 0;
+    isLoadType = (OPcodeE == 7'b0000011);
+    StallF     = 0;
+    StallD     = 0;
 
     begin : ForwardingA_logic
     if ((rsE != 0) && (rsE == rdM) && RegWriteM) begin
@@ -34,6 +45,23 @@ always_comb begin
         ForwardBE = 2'b01;
     end
     end
+
+
+    begin: Stalling
+    if ((isLoadType) && (rdE != 0) &&((rdE == rsD) || (rdE == rtD))) begin
+        StallF = 1;
+        StallD = 1;
+        FlushE = 1;
+
+    end
+    end
+
+
+
+
+
+
+
 end
 
 endmodule
