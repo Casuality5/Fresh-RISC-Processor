@@ -2,6 +2,10 @@ import Pkg::*;
 
 module Execute (
     input  Decode_Bundle  DB,
+    input  Memory_Bundle MB,
+    input [31:0] WD3,
+    input [1:0] ForwardAE,
+    input [1:0] ForwardBE,
     output Execute_Bundle EB,
     // Individual Fast-Path Outputs
     output PC_Next_Select_Case PCNext_Select,
@@ -10,12 +14,12 @@ module Execute (
 );
     logic [31:0] src_a, src_b;
     logic        zero, sltfs, sltfu;
-
-    assign src_a = (DB.ALUSrcA ? DB.Address : DB.RD1);
-    assign src_b = (DB.ALUSrcB ? DB.imm     : DB.RD2);
-    
+    logic [31:0] RD1E;
+    logic [31:0] RD2E;
     // Target Address calculation for Branches and JAL
     assign Target_Address = DB.Address + DB.imm;
+    assign src_a = (DB.ALUSrcA ? DB.Address : RD1E);
+    assign src_b = (DB.ALUSrcB ? DB.imm     : RD2E);
 
     always_comb begin 
         EB.instr        = DB.instr;      
@@ -28,6 +32,27 @@ module Execute (
         EB.Address      = DB.Address;
         ALUResult_to_Fetch = EB.ALUResult;
         
+        
+        // NEW MUXES FOR BYPASSING
+        case (ForwardAE)
+            2'b00: RD1E = EB.RD1;
+
+            2'b01: RD1E = WD3; // Use WD3 port from Result stage
+
+            2'b10: RD1E = MB.ALUResult; //Use ALUResult port from MEM stage
+
+            default: RD1E = EB.RD1;
+        endcase
+        case (ForwardBE)
+            2'b00: RD2E = EB.RD2;
+
+            2'b01: RD2E = WD3; // Use WD3 port from Result stage
+
+            2'b10: RD2E = MB.ALUResult; //Use ALUResult port from MEM stage
+
+            default: RD2E = EB.RD2;
+        endcase
+
         // ALU Math
         case (DB.ALUControl)
             ADD:  EB.ALUResult = src_a + src_b;
@@ -42,6 +67,7 @@ module Execute (
             SLTU: EB.ALUResult = ((src_a < src_b) ? 32'h1 : 32'h0);
             default: EB.ALUResult = 32'b0;
         endcase
+        
 
         // Branch condition logic
         zero  = ($signed(src_a) == $signed(src_b));
@@ -73,6 +99,5 @@ module Execute (
         // Pipeline Passthroughs
         
     end
-    
-    assign EB.PC4 = DB.PC4;
+ 
 endmodule
