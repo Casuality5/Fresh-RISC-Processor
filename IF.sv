@@ -7,6 +7,7 @@ module Fetch #(
 )(
     input logic            clk,
     input logic            rst,
+    input logic            enableif,
     input PC_Next_Select_Case PCNext_Select,
     input logic [31:0] Target_Address,
     input logic [31:0] ALUResult_to_Fetch,
@@ -37,9 +38,8 @@ always_ff @ (posedge clk or posedge rst) begin
         FB.Address <= 32'h80000000;
     end
 
-    else begin 
+    else if (!enableif) 
         FB.Address <= FB.PCNext;
-    end
 end
 
 initial begin

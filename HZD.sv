@@ -1,15 +1,9 @@
 module HazardUnit import Pkg::*;(
-    input logic [4:0] rsE, // rs comes from Execute stage, keep trach on Execute bundle
-    input logic [4:0] rtE, //  rt comes from Execute stage, Keep track on Execute bundle
-    input logic [4:0] rdE,
-    input logic [4:0] rsD,
-    input logic [4:0] rtD,
-    input logic [4:0] rdM,
     input logic [4:0] rdW,
-    input logic RegWriteM,
     input logic RegWriteW,
-    input logic [6:0] OPcodeE,
     input Execute_Bundle EB,
+    input Decode_Bundle DB,
+    input Memory_Bundle MB,
     output logic [1:0] ForwardAE,
     output logic [1:0] ForwardBE,
     output logic StallF,
@@ -19,15 +13,29 @@ module HazardUnit import Pkg::*;(
 );
 
 logic isLoadType;
+logic [4:0] rsE;
+logic [4:0] rtE;
+logic [4:0] rsD;
+logic [4:0] rtD;
+logic [4:0] rdE;
+logic [4:0] rdM;
+logic RegWriteM;
 
 
+assign rdE = EB.rd;
+assign rdM = MB.rd;
+assign RegWriteM = MB.RegW;
+assign rsE = EB.instr[19:15];
+assign rtE = EB.instr[24:20];
+assign rsD = DB.instr[19:15];
+assign rtD = DB.instr[24:20];
 // Muxes have to be placed in the EX stage
 
 always_comb begin
 
     ForwardAE = 2'b00;
     ForwardBE = 2'b00;
-    isLoadType = (OPcodeE == 7'b0000011);
+    isLoadType = (EB.instr[6:0] == 7'b0000011);
     StallF     = 0;
     StallD     = 0;
     FlushD     = 0;
