@@ -17,7 +17,7 @@ with open("SPIKE_TRACE.log",'w') as file:
                 '--pc=0x80000000',
                 '--log-commits',
                 '--instructions=8', 
-                '/home/creat/riscv-isa-sim/build/test.elf'],
+                '/home/creat/riscv-isa-sim/build/focus.elf'],
                 stdout=file,
                 stderr=file,
                 text=True)
@@ -32,8 +32,9 @@ with open("SPIKE_TRACE.log",'r') as file:
          machine_code.append(line[26:34])
          line = line.replace(line[23:35],"")
          line = line.replace("  "," ")
+         line = line.replace("0x","")
          line = line.replace("x","")
-         spike_file.write((line[12:])) 
+         spike_file.write((line[11:])) 
 
    with open("SPIKE_TRACE.log",'r') as file:
       lines = file.readlines() 
@@ -48,14 +49,15 @@ with open("SPIKE_TRACE.log",'r') as file:
       for line in lines:
          spike_list.append(line)
 
-with open("Program.mem",'a') as file:
+with open(r"C:/Users/creat/Fresh/Fresh.sim/sim_1/behav/xsim/Program.mem",'w') as file:
    for instruction in machine_code:
       file.write(f"{instruction}\n")
 
 VIVADO_BIN = r"C:/AMDDesignTools/2025.2/Vivado/bin"
 SIM_DIR = r"C:/Users/creat/Fresh/Fresh.sim/sim_1/behav/xsim"
+
 subprocess.run(
-    [VIVADO_BIN + r"/xsim.bat", "tb_behav", "-runall"],
+    [VIVADO_BIN+r"/xsim.bat", "tb_behav", "-runall"],
     cwd=SIM_DIR,
     check=True
 )
@@ -66,11 +68,8 @@ with open("C:/Users/creat/Desktop/dut_trace.log",'r') as vivado_log:
       vivado_list.append(line)
 
 for i in range(0,len(machine_code)):
-   if vivado_list[i] == spike_list[i]:
+   if (vivado_list)[i] == spike_list[i]:
       print(f"Instruction:- {machine_code[i]} => Pass")
    else:
       print(f"Instruction:- {machine_code[i]} => Fail")
-
-
-
 
