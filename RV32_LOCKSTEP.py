@@ -5,52 +5,52 @@
 
 import subprocess
 
-vivado_list=[]
-spike_list=[]
-machine_code=[]
+VIV_LIST=[]
+SPK_LIST=[]
+MAC_CODE=[]
 
-with open("SPIKE_TRACE.log",'w') as file:
-   p1 = subprocess.run(['wsl',
+INST_COUNT = int(input("Instructions:- "))
+
+p1 = subprocess.run(['wsl',
                 'spike',
                 '--isa=rv32i',
                 '-m0x7fe00000:0x2000000',
                 '--pc=0x80000000',
                 '--log-commits',
-                '--instructions=8', 
-                '/home/creat/riscv-isa-sim/build/focus.elf'],
-                stdout=file,
-                stderr=file,
+                f'--instructions={INST_COUNT}', 
+                '/home/creat/riscv-isa-sim/build/focus.elf','>','spike_final.log','2>&1'],
                 text=True)
-   
-with open("SPIKE_TRACE.log",'r') as file:
+  
+with open("spike_final.log",'r') as file:
    lines = file.readlines()
+   lines = lines[6:]
    
 
 
-   with open("SPIKE_TRACE.log",'a') as spike_file:
-      for line in lines[6:]:
-         machine_code.append(line[26:34])
+   with open("spike_final.log",'a') as spike_file:
+      for line in lines:
+         MAC_CODE.append(line[26:34])
          line = line.replace(line[23:35],"")
          line = line.replace("  "," ")
          line = line.replace("0x","")
          line = line.replace("x","")
          spike_file.write((line[11:])) 
 
-   with open("SPIKE_TRACE.log",'r') as file:
+   with open("spike_final.log",'r') as file:
       lines = file.readlines() 
 
-   lines = lines[9:]
+   lines = lines[INST_COUNT+1:] # Here do 1 + of total instruction asked in the spike
 
-   with open("SPIKE_TRACE.log",'w') as file:
+   with open("spike_final.log",'w') as file:
       file.writelines(lines)
    
-   with open("SPIKE_TRACE.log",'r') as spike_log:
+   with open("spike_final.log",'r') as spike_log:
       lines = spike_log.readlines()
       for line in lines:
-         spike_list.append(line)
+         SPK_LIST.append(line)
 
 with open(r"C:/Users/creat/Fresh/Fresh.sim/sim_1/behav/xsim/Program.mem",'w') as file:
-   for instruction in machine_code:
+   for instruction in MAC_CODE:
       file.write(f"{instruction}\n")
 
 VIVADO_BIN = r"C:/AMDDesignTools/2025.2/Vivado/bin"
@@ -65,11 +65,11 @@ subprocess.run(
 with open("C:/Users/creat/Desktop/dut_trace.log",'r') as vivado_log:
    lines = vivado_log.readlines()
    for line in lines:
-      vivado_list.append(line)
+      VIV_LIST.append(line)
 
-for i in range(0,len(machine_code)):
-   if (vivado_list)[i] == spike_list[i]:
-      print(f"Instruction:- {machine_code[i]} => Pass")
+for i in range(0,len(VIV_LIST)):
+   if (VIV_LIST)[i] == SPK_LIST[i]:
+      print(f"Instruction:- {MAC_CODE[i]} => Pass")
    else:
-      print(f"Instruction:- {machine_code[i]} => Fail")
+      print(f"Instruction:- {MAC_CODE[i]} => Fail")
 
