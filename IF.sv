@@ -3,7 +3,7 @@
 import Pkg::*;
 
 module Fetch #(
-    parameter Size = 512
+    parameter Size = 32768
 )(
     input logic            clk,
     input logic            rst,

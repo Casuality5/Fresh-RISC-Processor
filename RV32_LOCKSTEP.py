@@ -8,19 +8,23 @@ import subprocess
 VIV_LIST=[]
 SPK_LIST=[]
 MAC_CODE=[]
-PASS_COUNT = 0
-FAIL_COUNT = 0
-
-INST_COUNT = int(input("Instructions:- "))
-
-p1 = subprocess.run(['wsl',
+PASS_COUNT  = 0
+FAIL_COUNT  = 0
+ASM_NAME    = "focus" #input("Assembly File:- ")
+INST_COUNT  = 20 #int(input("Instructions:- "))
+CMPL_TO_ELF = subprocess.run(['wsl','riscv64-unknown-elf-gcc',
+                              '-march=rv32i','-mabi=ilp32','-nostdlib',
+                              '-Ttext','0x80000000',
+                              '-o',f'/home/creat/riscv-isa-sim/build/{ASM_NAME}.elf',
+                              f'/home/creat/riscv-isa-sim/build/{ASM_NAME}.s'])
+RUN_SPIKE   = subprocess.run(['wsl',
                 'spike',
                 '--isa=rv32i',
                 '-m0x7fe00000:0x2000000',
                 '--pc=0x80000000',
                 '--log-commits',
                 f'--instructions={INST_COUNT}', 
-                '/home/creat/riscv-isa-sim/build/focus.elf','>','spike_final.log','2>&1'],
+                f'/home/creat/riscv-isa-sim/build/{ASM_NAME}.elf','>','spike_final.log','2>&1'],
                 text=True)
   
 with open("spike_final.log",'r') as file:

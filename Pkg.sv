@@ -124,6 +124,8 @@ typedef struct packed {
 
 typedef struct packed {
     logic WE;
+    logic [31:0] Address;
+    logic Branch_taken;
     logic [31:0] instr;
     logic [31:0] DataMemoryAddress;
     logic [31:0] FinalDataMemoryRead;

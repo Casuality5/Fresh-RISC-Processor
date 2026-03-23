@@ -18,19 +18,19 @@ module Execute (
     logic [31:0] RD2E;
     // Target Address calculation for Branches and JAL
     assign Target_Address = DB.Address + DB.imm;
-    assign src_a = (DB.ALUSrcA ? DB.Address : RD1E);
-    assign src_b = (DB.ALUSrcB ? DB.imm     : RD2E);
+    
 
     always_comb begin 
         EB.instr        = DB.instr;      
         EB.RD2           = DB.RD2;
+        EB.RD1          = DB.RD1;
         EB.rd           = DB.rd;         
         EB.RegW         = DB.RegW;       
         EB.WE         = DB.MemW;       
         EB.ResultSelect = DB.ResultSelect;
         EB.PC4          = DB.PC4;
         EB.Address      = DB.Address;
-        ALUResult_to_Fetch = EB.ALUResult;
+        
         
         
         // NEW MUXES FOR BYPASSING
@@ -52,6 +52,8 @@ module Execute (
 
             default: RD2E = EB.RD2;
         endcase
+        src_a = (DB.ALUSrcA ? DB.Address : RD1E);
+        src_b = (DB.ALUSrcB ? DB.imm     : RD2E);
 
         // ALU Math
         case (DB.ALUControl)
@@ -99,5 +101,5 @@ module Execute (
         // Pipeline Passthroughs
         
     end
- 
+ assign ALUResult_to_Fetch = EB.ALUResult;
 endmodule

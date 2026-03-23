@@ -1,7 +1,9 @@
+`timescale 1ns / 1ps
+
 import Pkg::*;
 
 module Memory #(
-    parameter Size = 1024
+    parameter Size = 32768
     )(
     input Execute_Bundle EB,
     output Memory_Bundle MB,
@@ -116,10 +118,9 @@ end
 
 always_ff @(posedge clk) begin
   if (!rst && MB.WE) begin
-    dm[addr] <= MB.WD;
+    dm[addr] <= (dm[addr] & MaskWord2) | MaskWord1;
   end
 end
-
 
 
 endmodule

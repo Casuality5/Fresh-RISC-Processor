@@ -6,7 +6,9 @@ module Top import Pkg::*;(
     output logic [31:0] WD3_to_testbench,
     output logic [4:0] A3_to_testbench,
     output logic WE3_to_testbench,
-    output Memory_Bundle wb_in_to_testbench
+    output Memory_Bundle wb_in_to_testbench,
+    output logic branch_taken_to_testbench,
+    output logic regwrite_from_decode_to_testbench
 );
 
     Fetch_Bundle      if_out, id_in;
@@ -27,7 +29,9 @@ module Top import Pkg::*;(
 assign WD3_to_testbench = WD3;
 assign WE3_to_testbench = WE3;
 assign A3_to_testbench = A3;
-assign wb_in_to_testbench = wb_in;     
+assign wb_in_to_testbench = wb_in;
+assign branch_taken_to_testbench = ex_out.Branch_taken;
+assign regwrite_from_decode_to_testbench = id_out.RegW;    
 
     // 1. IF to ID Register (Instruction Fetch to Decode)
     reg_IF_ID ifid (

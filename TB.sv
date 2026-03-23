@@ -7,6 +7,8 @@ module tb import Pkg::*; ();
     logic [31:0] WD3_to_testbench;
     logic [4:0] A3_to_testbench;
     Memory_Bundle wb_in_to_testbench;
+    logic branch_taken_to_testbench;
+    logic regwrite_from_decode_to_testbench;
     
 
     // Instantiate your Core
@@ -16,7 +18,9 @@ module tb import Pkg::*; ();
         .wb_in_to_testbench(wb_in_to_testbench),
         .WE3_to_testbench(WE3_to_testbench),
         .WD3_to_testbench(WD3_to_testbench),
-        .A3_to_testbench(A3_to_testbench)
+        .A3_to_testbench(A3_to_testbench),
+        .branch_taken_to_testbench(branch_taken_to_testbench),
+        .regwrite_from_decode_to_testbench(regwrite_from_decode_to_testbench)
     );
 
     // 1. Generate Clock (100MHz)
@@ -36,11 +40,11 @@ module tb import Pkg::*; ();
         rst = 1;
         
         // Hold reset for a few cycles
-        #20;
+        #5;
         rst = 0;
 
         // Run for enough time to see the instructions pass through all 5 stages
-        #200;
+        #50000;
         $fclose(fd);
         $display("File closed");
         $display("Simulation Finished. Check the Waveform!");
@@ -50,7 +54,7 @@ module tb import Pkg::*; ();
         if (!rst) begin
             if (WE3_to_testbench && A3_to_testbench !=0) begin
                 $fwrite(fd, "%08h %02d %08h\n", wb_in_to_testbench.PC4-4, A3_to_testbench, WD3_to_testbench);
-               end
-         end
-    end
+            end
+        end
+        end
 endmodule

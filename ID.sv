@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 import Pkg::*;
 
 
@@ -28,6 +30,7 @@ always_comb begin
     DB       = '0;
     DB.ALUControl = ADD;
     DB.instr = FB.instr;
+    DB.Address = FB.Address;
     DB.A1    = FB.instr[19:15];
     DB.A2    = FB.instr[24:20];
     DB.rd    = FB.instr[11:7];
@@ -498,7 +501,7 @@ always_comb begin
         end
         
         default: begin 
-            DB.RegW=1;     
+            DB.RegW=0;     
             DB.MemW=0;     
             DB.Branch=0;       
             DB.Jump=0;     
