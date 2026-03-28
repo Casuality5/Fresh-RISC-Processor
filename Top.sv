@@ -31,7 +31,8 @@ assign WE3_to_testbench = WE3;
 assign A3_to_testbench = A3;
 assign wb_in_to_testbench = wb_in;
 assign branch_taken_to_testbench = ex_out.Branch_taken;
-assign regwrite_from_decode_to_testbench = id_out.RegW;    
+assign regwrite_from_decode_to_testbench = id_out.RegW;
+
 
     // 1. IF to ID Register (Instruction Fetch to Decode)
     reg_IF_ID ifid (

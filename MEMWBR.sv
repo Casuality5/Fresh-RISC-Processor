@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 import Pkg::*;
 
 module reg_MEM_WB (
@@ -6,7 +8,7 @@ module reg_MEM_WB (
     output Memory_Bundle   q
 );
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             q <= '0; 
         end else begin

@@ -35,7 +35,7 @@ end
 
 always_ff @ (posedge clk or posedge rst) begin 
     if (rst) begin 
-        FB.Address <= 32'h80000000;
+        FB.Address <= 32'h7ffffffc;
     end
 
     else if (!enableif) 

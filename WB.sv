@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module ResultMux import Pkg::*; (
     input  Memory_Bundle    MB,
     output logic WE3,

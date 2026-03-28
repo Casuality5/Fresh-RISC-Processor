@@ -14,8 +14,8 @@ module Memory #(
 logic [31:0] DataMemoryRead;
 logic [31:0] dm[Size-1:0];
 logic [31:0] addr;
-assign addr = MB.ALUResult[31:2];
-assign DataMemoryRead=dm[MB.ALUResult[31:2]];
+assign addr = MB.ALUResult[31:2] & Size;
+assign DataMemoryRead=dm[addr];
 logic [31:0] MaskWord1, MaskWord2;
 logic [7:0] Byte_Data;
 logic [15:0] Half_Data;
@@ -26,12 +26,15 @@ initial begin
     end
 always_comb begin
     MB.WE = EB.WE;
+    MB.Branch_taken = EB.Branch_taken;
     MB.instr = EB.instr;
     MB.WD = EB.RD2;
     MB.RegW = EB.RegW;
     MB.PC4 = EB.PC4;
     MB.rd = EB.rd;
     MB.ALUResult = EB.ALUResult;
+    MB.Address = EB.Address;
+    MB.Target_Address = EB.Target_Address;
     MB.ResultSelect = EB.ResultSelect;
     MaskWord1 = 32'b0;
     MaskWord2 = 32'hFFFF_FFFF;
@@ -124,3 +127,4 @@ end
 
 
 endmodule
+

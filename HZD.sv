@@ -74,8 +74,9 @@ always_comb begin
 
 
     begin: Control
-    if (EB.Branch_taken) begin
+    if (EB.Branch_taken || EB.Jump) begin
         FlushD = 1;
+        FlushE = 1;
 
     end
     end

@@ -22,7 +22,7 @@ module Execute (
 
     always_comb begin 
         EB.instr        = DB.instr;      
-        EB.RD2           = DB.RD2;
+        // EB.RD2           = DB.RD2;
         EB.RD1          = DB.RD1;
         EB.rd           = DB.rd;         
         EB.RegW         = DB.RegW;       
@@ -30,28 +30,33 @@ module Execute (
         EB.ResultSelect = DB.ResultSelect;
         EB.PC4          = DB.PC4;
         EB.Address      = DB.Address;
+        EB.Target_Address = 32'b0;
+        EB.Jump           = DB.Jump;
         
         
         
         // NEW MUXES FOR BYPASSING
         case (ForwardAE)
-            2'b00: RD1E = EB.RD1;
+            2'b00: RD1E = DB.RD1;
 
             2'b01: RD1E = WD3; // Use WD3 port from Result stage
 
             2'b10: RD1E = MB.ALUResult; //Use ALUResult port from MEM stage
 
-            default: RD1E = EB.RD1;
+            default: RD1E = DB.RD1;
         endcase
         case (ForwardBE)
-            2'b00: RD2E = EB.RD2;
+            2'b00: RD2E = DB.RD2;
 
             2'b01: RD2E = WD3; // Use WD3 port from Result stage
 
             2'b10: RD2E = MB.ALUResult; //Use ALUResult port from MEM stage
 
-            default: RD2E = EB.RD2;
+            default: RD2E = DB.RD2;
         endcase
+
+        EB.RD2 = RD2E;
+
         src_a = (DB.ALUSrcA ? DB.Address : RD1E);
         src_b = (DB.ALUSrcB ? DB.imm     : RD2E);
 
@@ -91,8 +96,10 @@ module Execute (
 
         // Redirection Logic (The Fast-Path Decision)
         if (DB.Jump) begin
+            EB.Target_Address = (DB.instr[6:0] == 7'b1100111) ? EB.ALUResult : Target_Address;
             PCNext_Select = (DB.instr[6:0] == 7'b1100111) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
         end else if (EB.Branch_taken) begin
+            EB.Target_Address = Target_Address;
             PCNext_Select = JUMP_TO_LABEL;
         end else begin
             PCNext_Select = STEP_FORWARD;

@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 package Pkg;
 
     typedef enum logic [1:0] {
@@ -120,17 +122,19 @@ typedef struct packed {
     logic ALUSrcB;
     logic [31:0] instr;
     logic Branch_taken;
+    logic [31:0] Target_Address;
 } Execute_Bundle;
 
 typedef struct packed {
     logic WE;
-    logic [31:0] Address;
     logic Branch_taken;
     logic [31:0] instr;
     logic [31:0] DataMemoryAddress;
     logic [31:0] FinalDataMemoryRead;
     logic [31:0] WD;
     logic [31:0] ALUResult;
+    logic [31:0] Address;
+    logic [31:0] Target_Address;
     logic [4:0] rd;
     logic RegW;
     Result_Mux_Case    ResultSelect;
