@@ -157,4 +157,4 @@ class ISA_VERIFICATION:
       return "Script Ended !"
 
 
-ISA_VERIFICATION('focus',100)
+ISA_VERIFICATION('boot',500)
