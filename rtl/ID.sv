@@ -405,6 +405,7 @@ always_comb begin
             DB.Jump=0;     
             DB.ALUSrcB=1;      
             DB.ALUSrcA=0;      
+            DB.A1=0;
             DB.ALUOp=FORCE_ADD;
             case (4'(DB.ALUOp))
                 FORCE_ADD: begin 

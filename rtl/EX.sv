@@ -21,6 +21,7 @@ module Execute (
     
 
     always_comb begin 
+        EB = '0;
         EB.instr        = DB.instr;      
         // EB.RD2           = DB.RD2;
         EB.RD1          = DB.RD1;

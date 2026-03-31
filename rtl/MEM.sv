@@ -14,7 +14,7 @@ module Memory #(
 logic [31:0] DataMemoryRead;
 logic [31:0] dm[Size-1:0];
 logic [31:0] addr;
-assign addr = MB.ALUResult[31:2] & Size;
+assign addr = MB.ALUResult[31:2] % Size;
 assign DataMemoryRead=dm[addr];
 logic [31:0] MaskWord1, MaskWord2;
 logic [7:0] Byte_Data;
