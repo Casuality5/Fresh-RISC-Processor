@@ -156,5 +156,6 @@ class ISA_VERIFICATION:
 
       return "Script Ended !"
 
-
-ISA_VERIFICATION('boot',500)
+FILE = input("Enter File Name:- ")
+TRACE_LINES = int(input("Enter number of Trace lines you want to see:- "))
+ISA_VERIFICATION(FILE,TRACE_LINES)
