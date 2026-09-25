@@ -4,132 +4,92 @@ import Pkg::*;
 
 module Memory #(
     parameter Size = 4096
-    )(
-    input Execute_Bundle EB,
+)(
+    input  Execute_Bundle EB,
     output Memory_Bundle MB,
     input  logic clk,
     input  logic rst
 );
 
-logic [31:0] DataMemoryRead;
-//(* ram_style = "distributed" *) 
-logic [31:0] dm[Size-1:0];
-logic [31:0] addr;
-assign addr = MB.ALUResult[31:2] % Size;
-assign DataMemoryRead = dm[addr];  // Combinational read for 5-stage pipeline
-logic [31:0] MaskWord1, MaskWord2;
-logic [7:0] Byte_Data;
-logic [15:0] Half_Data;
-initial begin
-        for (int i = 0; i < Size; i++) begin
-            dm[i] = 32'b0;
+    localparam AddrWidth = $clog2(Size);
+    logic [AddrWidth-1:0] addr;
+    assign addr = EB.ALUResult[AddrWidth+1:2];
+
+    // 4 Byte Lanes for True FPGA Block RAM Inference
+    (* ram_style = "block" *) logic [7:0] dm0 [0:Size-1];
+    (* ram_style = "block" *) logic [7:0] dm1 [0:Size-1];
+    (* ram_style = "block" *) logic [7:0] dm2 [0:Size-1];
+    (* ram_style = "block" *) logic [7:0] dm3 [0:Size-1];
+
+    // 1. SYNCHRONOUS BRAM READ & BYTE-WRITE ENABLES
+    logic [31:0] DataMemoryRead;
+    logic [3:0]  we_bytes;
+
+    // Byte Enable Decoder
+    always_comb begin
+        we_bytes = 4'b0000;
+        if (EB.WE) begin
+            case (EB.instr[14:12])
+                3'b000:  we_bytes = 4'b0001 << EB.ALUResult[1:0];         // SB
+                3'b001:  we_bytes = EB.ALUResult[1] ? 4'b1100 : 4'b0011; // SH
+                3'b010:  we_bytes = 4'b1111;                             // SW
+                default: we_bytes = 4'b1111;
+            endcase
         end
-        $readmemh("D:/Fresh/Fresh.srcs/sim_1/new/Program.mem", dm);
     end
-always_comb begin
-    MB.WE = EB.WE;
-    MB.Branch_taken = EB.Branch_taken;
-    MB.Jump = EB.Jump;
-    MB.instr = EB.instr;
-    MB.WD = EB.RD2;
-    MB.RegW = EB.RegW;
-    MB.PC4 = EB.PC4;
-    MB.rd = EB.rd;
-    MB.ALUResult = EB.ALUResult;
-    MB.Address = EB.Address;
-    MB.Target_Address = EB.Target_Address;
-    MB.ResultSelect = EB.ResultSelect;
-    MaskWord1 = 32'b0;
-    MaskWord2 = 32'hFFFF_FFFF;
-    Byte_Data = 8'b0;
-    Half_Data = 16'b0;
-    MB.FinalDataMemoryRead = 32'b0;
-    MB.RS1 = EB.RS1;
-    MB.RS2 = EB.RS2;
 
-                                                                                                    
-    case(MB.instr[14:12])
-        
-        3'b000: begin 
-                case (MB.ALUResult[1:0])
-                    2'h0: begin MaskWord1 = {24'b0,MB.WD[7:0]};
-                          MaskWord2 = {{24{1'b1}},8'b0}; end
-                    
-                    2'h1: begin MaskWord1 = {16'b0,MB.WD[7:0],8'b0};
-                          MaskWord2 = {{16{1'b1}},8'b0,{8{1'b1}}}; end
-                    
-                    2'h2: begin MaskWord1 = {8'b0, MB.WD[7:0],16'b0};
-                          MaskWord2 = {{8{1'b1}}, 8'b0, {16{1'b1}}}; end
-                    
-                    2'h3: begin MaskWord1 = {MB.WD[7:0], 24'b0};
-                          MaskWord2 = {8'b0, {24{1'b1}}}; end
+    // Clocked Read & Write (Matches Hardware BRAM Primitives)
+    always_ff @(posedge clk) begin
+        // Read (Synchronous)
+        DataMemoryRead[7:0]   <= dm0[addr];
+        DataMemoryRead[15:8]  <= dm1[addr];
+        DataMemoryRead[23:16] <= dm2[addr];
+        DataMemoryRead[31:24] <= dm3[addr];
 
-                    default: begin MaskWord1 = {24'b0,MB.WD[7:0]};
-                          MaskWord2 = {{24{1'b1}},8'b0};
-                    end
-                    endcase
-                    
-                 
-                 end
-        3'b001: begin
-                case(MB.ALUResult[1])
-                    1'b0: begin MaskWord1 = {16'b0, MB.WD[15:0]};
-                          MaskWord2 = {{16{1'b1}}, 16'b0}; end
-                    
-                    1'b1: begin MaskWord1 = {MB.WD[15:0], 16'b0};
-                          MaskWord2 = {16'b0, {16{1'b1}}}; end
-                    endcase
-                
-                end
-        3'b010: begin // SW
-             MaskWord1 = MB.WD;
-             MaskWord2 = 32'h0000_0000;
-                 end
+        // Byte Writes
+        if (we_bytes[0]) dm0[addr] <= (EB.instr[14:12] == 3'b000) ? EB.RD2[7:0]   : EB.RD2[7:0];
+        if (we_bytes[1]) dm1[addr] <= (EB.instr[14:12] == 3'b000) ? EB.RD2[7:0]   : EB.RD2[15:8];
+        if (we_bytes[2]) dm2[addr] <= (EB.instr[14:12] == 3'b000) ? EB.RD2[7:0]   : EB.RD2[23:16];
+        if (we_bytes[3]) dm3[addr] <= (EB.instr[14:12] == 3'b000) ? EB.RD2[7:0]   : EB.RD2[31:24];
+    end
 
+    // 2. COMBINATIONAL OUTPUT SIGNALS TO WB STAGE
+    logic [7:0]  Byte_Data;
+    logic [15:0] Half_Data;
 
-        default: begin MaskWord1 = {24'b0,MB.WD[7:0]};
-                        MaskWord2 = {{24{1'b1}},8'b0}; end
+    always_comb begin
+        MB.WE             = EB.WE;
+        MB.Branch_taken   = EB.Branch_taken;
+        MB.Jump           = EB.Jump;
+        MB.instr          = EB.instr;
+        MB.WD             = EB.RD2;
+        MB.RegW           = EB.RegW;
+        MB.PC4            = EB.PC4;
+        MB.rd             = EB.rd;
+        MB.ALUResult      = EB.ALUResult;
+        MB.Address        = EB.Address;
+        MB.Target_Address = EB.Target_Address;
+        MB.ResultSelect   = EB.ResultSelect;
+        MB.RS1            = EB.RS1;
+        MB.RS2            = EB.RS2;
+
+        case (EB.ALUResult[1:0])
+            2'b00: Byte_Data = DataMemoryRead[7:0];
+            2'b01: Byte_Data = DataMemoryRead[15:8];
+            2'b10: Byte_Data = DataMemoryRead[23:16];
+            2'b11: Byte_Data = DataMemoryRead[31:24];
         endcase
 
-        case (MB.ALUResult[1:0])
-        2'b00: Byte_Data = DataMemoryRead[7:0];
-    
-        2'b01: Byte_Data = DataMemoryRead[15:8];
-    
-        2'b10: Byte_Data = DataMemoryRead[23:16];
-    
-        2'b11: Byte_Data = DataMemoryRead[31:24];
-    
-        endcase
-    
-    case (MB.ALUResult[1])
-        1'b0: Half_Data = DataMemoryRead[15:0];
-    
-        1'b1: Half_Data = DataMemoryRead[31:16];
-    
-        endcase
-    
-    case (MB.instr[14:12])
-        LOAD_BYTE: MB.FinalDataMemoryRead = {{24{Byte_Data[7]}},Byte_Data};
-        
-        LOAD_HALF: MB.FinalDataMemoryRead = {{16{Half_Data[15]}},Half_Data};
-        
-        LOAD_WORD: MB.FinalDataMemoryRead = DataMemoryRead;
-        
-        LOAD_BYTE_UNSIGNED: MB.FinalDataMemoryRead = {24'b0,Byte_Data};
-        
-        LOAD_HALF_UNSIGNED: MB.FinalDataMemoryRead = {16'b0,Half_Data};
+        Half_Data = EB.ALUResult[1] ? DataMemoryRead[31:16] : DataMemoryRead[15:0];
 
-        default: begin MB.FinalDataMemoryRead = {{24{Byte_Data[7]}},Byte_Data}; end
+        case (EB.instr[14:12])
+            3'b000:  MB.FinalDataMemoryRead = {{24{Byte_Data[7]}}, Byte_Data}; 
+            3'b001:  MB.FinalDataMemoryRead = {{16{Half_Data[15]}}, Half_Data}; 
+            3'b010:  MB.FinalDataMemoryRead = DataMemoryRead;                   
+            3'b100:  MB.FinalDataMemoryRead = {24'b0, Byte_Data};               
+            3'b101:  MB.FinalDataMemoryRead = {16'b0, Half_Data};               
+            default: MB.FinalDataMemoryRead = DataMemoryRead;
         endcase
-end
-
-always_ff @(posedge clk) begin
-  if (!rst && MB.WE) begin
-    dm[addr] <= (dm[addr] & MaskWord2) | MaskWord1;
-  end
-end
-
+    end
 
 endmodule
-

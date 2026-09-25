@@ -17,7 +17,6 @@ module Fetch #(
 
 //logic [31:0] pc_next;
 logic [31:0] instr_out;
-logic [31:0] im[Size-1:0];
 
 assign FB.PC4 = FB.Address + 32'h4;
 
@@ -43,6 +42,9 @@ always_ff @ (posedge clk or posedge rst) begin
     else if (!enableif) 
         FB.Address <= FB.PCNext;
 end
+
+
+(* ram_style = "block" *) logic [31:0] im[Size-1:0];
 
 initial begin
     $readmemh("D:/Fresh/Fresh.srcs/sim_1/new/Program.mem",im);
