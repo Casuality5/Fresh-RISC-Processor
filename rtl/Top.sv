@@ -1,15 +1,12 @@
 `timescale 1ns / 1ps
 
-module Top import Pkg::*;(
+import Pkg::*;
+module Top(
     input logic clk,
     input logic rst,
-    output logic [31:0] WD3_to_testbench,
-    output logic [4:0] A3_to_testbench,
-    output logic WE3_to_testbench,
-    output Memory_Bundle wb_in_to_testbench,
-    output logic branch_taken_to_testbench,
-    output logic regwrite_from_decode_to_testbench
+    output logic Write_Enable
 );
+
 
     Fetch_Bundle      if_out, id_in;
     Decode_Bundle     id_out, ex_in;
@@ -25,16 +22,12 @@ module Top import Pkg::*;(
     logic [1:0] ForwardAE;
     logic [1:0] ForwardBE;
     logic enableifid, clr, clre, enableif;
-
-assign WD3_to_testbench = WD3;
-assign WE3_to_testbench = WE3;
-assign A3_to_testbench = A3;
-assign wb_in_to_testbench = wb_in;
-assign branch_taken_to_testbench = ex_out.Branch_taken;
-assign regwrite_from_decode_to_testbench = id_out.RegW;
+    
+    assign Write_Enable = WE3;
 
 
     // 1. IF to ID Register (Instruction Fetch to Decode)
+    (*DONT_TOUCH = "TRUE"*)
     reg_IF_ID ifid (
         .clk(clk), 
         .rst(rst),
@@ -45,6 +38,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 2. ID to EX Register (Decode to Execute)
+    (*DONT_TOUCH = "TRUE"*)
     reg_ID_EX ide(
         .clk(clk), 
         .rst(rst),
@@ -54,6 +48,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 3. EX to MEM Register (Execute to Memory)
+    (*DONT_TOUCH = "TRUE"*)
     reg_EX_MEM exmem(
         .clk(clk), 
         .rst(rst),
@@ -62,6 +57,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 4. MEM to WB Register (Memory to Writeback)
+    (*DONT_TOUCH = "TRUE"*)
     reg_MEM_WB memwb(
         .clk(clk), 
         .rst(rst),
@@ -70,6 +66,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 1. Fetch Stage
+    (*DONT_TOUCH = "TRUE"*)
     Fetch fs(
         .clk(clk),
         .rst(rst),
@@ -81,6 +78,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 2. Decode Stage
+    (*DONT_TOUCH = "TRUE"*)
     Decode ds(
         .clk(clk),
         .rst(rst),
@@ -92,6 +90,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 3. Execute Stage
+    (*DONT_TOUCH = "TRUE"*)
     Execute es(
         .DB(ex_in),
         .EB(ex_out),
@@ -101,10 +100,12 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
         .WD3(WD3),
         .PCNext_Select(PCNext_Select),
         .Target_Address(Target_Address),
-        .ALUResult_to_Fetch(ALUResult_to_Fetch)
+        .ALUResult_to_Fetch(ALUResult_to_Fetch),
+        .MB_ALUResult(mem_out.ALUResult)
     );
 
     // 4. Memory Stage
+    (*DONT_TOUCH = "TRUE"*)
     Memory ms(
         .clk(clk),
         .rst(rst),
@@ -113,6 +114,7 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
     );
 
     // 5. ResultMux (Writeback)
+    (*DONT_TOUCH = "TRUE"*)
     ResultMux rm(
         .MB(wb_in),
         .A3(A3),
@@ -120,10 +122,9 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
         .WD3(WD3)
     );
 
+    // 6. Hazard Unit
+    (*DONT_TOUCH = "TRUE"*)
     HazardUnit hzd(
-        .DB(id_out),
-        .EB(ex_out),
-        .MB(mem_out),
         .rdW(A3),
         .RegWriteW(WE3),
         .ForwardAE(ForwardAE),
@@ -131,7 +132,14 @@ assign regwrite_from_decode_to_testbench = id_out.RegW;
         .StallF(enableif),
         .StallD(enableifid),
         .FlushD(clr),
-        .FlushE(clre)
+        .FlushE(clre),
+        .EB_instr(ex_out.instr),
+        .EB_rd(ex_out.rd),
+        .EB_branch_taken(ex_out.Branch_taken),
+        .EB_jump(ex_out.Jump),
+        .DB_instr(id_out.instr),
+        .MB_rd(mem_out.rd),
+        .MB_RegW(mem_out.RegW)
     );
 
 endmodule

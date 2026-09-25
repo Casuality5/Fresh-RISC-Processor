@@ -1,9 +1,17 @@
 module HazardUnit import Pkg::*;(
     input logic [4:0] rdW,
     input logic RegWriteW,
-    input Execute_Bundle EB,
-    input Decode_Bundle DB,
-    input Memory_Bundle MB,
+    input logic [31:0] EB_instr,
+    input logic [4:0] EB_rd,
+    input logic EB_branch_taken,
+    input logic EB_jump,
+    input logic [31:0] DB_instr,
+    input logic [4:0] MB_rd,
+    input logic MB_RegW,
+    
+//    input Execute_Bundle EB,
+//    input Decode_Bundle DB,
+//    input Memory_Bundle MB,
     output logic [1:0] ForwardAE,
     output logic [1:0] ForwardBE,
     output logic StallF,
@@ -22,20 +30,30 @@ logic [4:0] rdM;
 logic RegWriteM;
 
 
-assign rdE = EB.rd;
-assign rdM = MB.rd;
-assign RegWriteM = MB.RegW;
-assign rsE = EB.instr[19:15];
-assign rtE = EB.instr[24:20];
-assign rsD = DB.instr[19:15];
-assign rtD = DB.instr[24:20];
-// Muxes have to be placed in the EX stage
+assign rdE = EB_rd; // this
+assign rdM = MB_rd; // this
+assign RegWriteM = MB_RegW; // this
+    assign rsE = EB_instr[19:15]; // this
+    assign rtE = EB_instr[24:20]; // this
+    assign rsD = DB_instr[19:15]; // this
+    assign rtD = DB_instr[24:20]; // this
+
+    logic rs1_valid;
+    logic rs2_valid;
+    
+    assign rs1_valid = (DB_instr[6:0] != 7'b0110111) && // LUI
+                       (DB_instr[6:0] != 7'b0010111) && // AUIPC
+                       (DB_instr[6:0] != 7'b1101111);   // JAL
+                       
+    assign rs2_valid = (DB_instr[6:0] == 7'b0110011) || // R-Type
+                       (DB_instr[6:0] == 7'b1100011) || // Branch
+                       (DB_instr[6:0] == 7'b0100011);   // Store
 
 always_comb begin
 
     ForwardAE = 2'b00;
     ForwardBE = 2'b00;
-    isLoadType = (EB.instr[6:0] == 7'b0000011);
+    isLoadType = (EB_instr[6:0] == 7'b0000011); // this 
     StallF     = 0;
     StallD     = 0;
     FlushD     = 0;
@@ -64,17 +82,15 @@ always_comb begin
 
 
     begin: Stalling
-    if ((isLoadType) && (rdE != 0) &&((rdE == rsD) || (rdE == rtD))) begin
+    if ((isLoadType) && (rdE != 0) && (((rdE == rsD) && rs1_valid) || ((rdE == rtD) && rs2_valid))) begin
         StallF = 1;
         StallD = 1;
         FlushE = 1;
-
     end
     end
-
 
     begin: Control
-    if (EB.Branch_taken || EB.Jump) begin
+    if (EB_branch_taken || EB_jump) begin // this 
         FlushD = 1;
         FlushE = 1;
 

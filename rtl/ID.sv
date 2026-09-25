@@ -553,59 +553,17 @@ always_comb begin
             end
 
     endcase
-
-
-
-//    case (4'(DB.ALUOp))
-//        FORCE_ADD: begin 
-//            DB.ALUControl = ADD;
-//        end
-
-//        FORCE_SUB: begin 
-//            DB.ALUControl = SUB;
-//        end
-
-//        CHECK_FUNCT_CODE: begin
-//            case (FB.instr[14:12])
-//                3'b000:     DB.ALUControl = (FB.instr[30] ? SUB : ADD);
-//                3'b001:     DB.ALUControl = SLL;
-//                3'b010:     DB.ALUControl = SLT;
-//                3'b011:     DB.ALUControl = SLTU;
-//                3'b100:     DB.ALUControl = XORs;
-//                3'b101:     DB.ALUControl = (FB.instr[30] ? SRA : SRL);
-//                3'b110:     DB.ALUControl = ORs;
-//                3'b111:     DB.ALUControl = ANDs;
-//            endcase
-//        end
-
-//        I_TYPE_MATH: begin 
-//            case (FB.instr[14:12])
-//                3'b000:     DB.ALUControl = ADD;
-//                3'b001:     DB.ALUControl = SLL;
-//                3'b010:     DB.ALUControl = SLT;
-//                3'b011:     DB.ALUControl = SLTU;
-//                3'b100:     DB.ALUControl = XORs;
-//                3'b101:     DB.ALUControl = (FB.instr[30] ? 4'h7 : 4'h6);
-//                3'b110:     DB.ALUControl = ORs;
-//                3'b111:     DB.ALUControl = ANDs;
-//            endcase
-//        end
-        
-//        default : DB.ALUControl = ADD;
-//    endcase
 end
 
 
 initial begin
-    int i;
-    for ( i = 0; i < 32; i = i + 1) begin
+    for (int i = 0; i < 32; i++) begin
         rf[i] = 32'b0;
         end
     end 
       
-always_ff @(negedge clk) begin // Try negedge to solve race conditions!
+always_ff @(negedge clk) begin 
     if (rst) begin
-        // Reset logic
         for (int i = 0; i < 32; i++) begin
             rf[i] <= 32'b0;
             end

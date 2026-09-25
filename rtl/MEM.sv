@@ -3,7 +3,7 @@
 import Pkg::*;
 
 module Memory #(
-    parameter Size = 32768
+    parameter Size = 4096
     )(
     input Execute_Bundle EB,
     output Memory_Bundle MB,
@@ -12,10 +12,11 @@ module Memory #(
 );
 
 logic [31:0] DataMemoryRead;
+//(* ram_style = "distributed" *) 
 logic [31:0] dm[Size-1:0];
 logic [31:0] addr;
 assign addr = MB.ALUResult[31:2] % Size;
-assign DataMemoryRead=dm[addr];
+assign DataMemoryRead = dm[addr];  // Combinational read for 5-stage pipeline
 logic [31:0] MaskWord1, MaskWord2;
 logic [7:0] Byte_Data;
 logic [15:0] Half_Data;
@@ -23,10 +24,12 @@ initial begin
         for (int i = 0; i < Size; i++) begin
             dm[i] = 32'b0;
         end
+        $readmemh("D:/Fresh/Fresh.srcs/sim_1/new/Program.mem", dm);
     end
 always_comb begin
     MB.WE = EB.WE;
     MB.Branch_taken = EB.Branch_taken;
+    MB.Jump = EB.Jump;
     MB.instr = EB.instr;
     MB.WD = EB.RD2;
     MB.RegW = EB.RegW;
@@ -41,6 +44,8 @@ always_comb begin
     Byte_Data = 8'b0;
     Half_Data = 16'b0;
     MB.FinalDataMemoryRead = 32'b0;
+    MB.RS1 = EB.RS1;
+    MB.RS2 = EB.RS2;
 
                                                                                                     
     case(MB.instr[14:12])

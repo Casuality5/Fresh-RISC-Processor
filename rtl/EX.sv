@@ -2,7 +2,8 @@ import Pkg::*;
 
 module Execute (
     input  Decode_Bundle  DB,
-    input  Memory_Bundle MB,
+    input  Memory_Bundle  MB,
+    input logic [31:0] MB_ALUResult,
     input [31:0] WD3,
     input [1:0] ForwardAE,
     input [1:0] ForwardBE,
@@ -16,6 +17,12 @@ module Execute (
     logic        zero, sltfs, sltfu;
     logic [31:0] RD1E;
     logic [31:0] RD2E;
+    logic [31:0] MB_ForwardData;
+
+    // Calculate correct result from MEM stage (Load data, PC4, or ALU result)
+    assign MB_ForwardData = (MB.ResultSelect == RESULT_MEM) ? MB.FinalDataMemoryRead :
+                            (MB.ResultSelect == RESULT_PC)  ? MB.PC4 : MB_ALUResult;
+
     // Target Address calculation for Branches and JAL
     assign Target_Address = DB.Address + DB.imm;
     
@@ -31,8 +38,11 @@ module Execute (
         EB.ResultSelect = DB.ResultSelect;
         EB.PC4          = DB.PC4;
         EB.Address      = DB.Address;
-        EB.Target_Address = 32'b0;
+//        EB.Target_Address = DB.PC4 + 4;
+        EB.Target_Address = 32'b0; 
         EB.Jump           = DB.Jump;
+        EB.RS1            = DB.A1; // This Added
+        EB.RS2            = DB.A2; // This Added
         
         
         
@@ -42,7 +52,7 @@ module Execute (
 
             2'b01: RD1E = WD3; // Use WD3 port from Result stage
 
-            2'b10: RD1E = MB.ALUResult; //Use ALUResult port from MEM stage
+            2'b10: RD1E = MB_ForwardData; // Use correct result from MEM stage
 
             default: RD1E = DB.RD1;
         endcase
@@ -51,14 +61,14 @@ module Execute (
 
             2'b01: RD2E = WD3; // Use WD3 port from Result stage
 
-            2'b10: RD2E = MB.ALUResult; //Use ALUResult port from MEM stage
+            2'b10: RD2E = MB_ForwardData; // Use correct result from MEM stage
 
             default: RD2E = DB.RD2;
         endcase
 
         EB.RD2 = RD2E;
 
-        src_a = (DB.ALUSrcA ? DB.Address : RD1E);
+        src_a = (DB.instr[6:0] == 7'b0110111) ? 32'b0 : (DB.ALUSrcA ? DB.Address : RD1E);
         src_b = (DB.ALUSrcB ? DB.imm     : RD2E);
 
         // ALU Math
@@ -76,6 +86,9 @@ module Execute (
             default: EB.ALUResult = 32'b0;
         endcase
         
+        if (DB.Jump) begin
+            EB.ALUResult = DB.PC4;
+        end
 
         // Branch condition logic
         zero  = ($signed(src_a) == $signed(src_b));
@@ -94,10 +107,9 @@ module Execute (
                 default: EB.Branch_taken = 1'b0;
             endcase
         end
-
-        // Redirection Logic (The Fast-Path Decision)
+        
         if (DB.Jump) begin
-            EB.Target_Address = (DB.instr[6:0] == 7'b1100111) ? EB.ALUResult : Target_Address;
+            EB.Target_Address = (DB.instr[6:0] == 7'b1100111) ? ((src_a + src_b) & ~32'h1) : Target_Address;
             PCNext_Select = (DB.instr[6:0] == 7'b1100111) ? JUMP_TO_CALCULATED_REGISTER : JUMP_TO_LABEL;
         end else if (EB.Branch_taken) begin
             EB.Target_Address = Target_Address;
@@ -105,9 +117,9 @@ module Execute (
         end else begin
             PCNext_Select = STEP_FORWARD;
         end
-
-        // Pipeline Passthroughs
         
     end
- assign ALUResult_to_Fetch = EB.ALUResult;
+ assign ALUResult_to_Fetch = (DB.Jump && DB.instr[6:0] == 7'b1100111) ?
+    ((src_a + src_b) & ~32'h1) :
+    EB.ALUResult;//EB.ALUResult;
 endmodule

@@ -65,7 +65,7 @@ package Pkg;
 
 typedef struct packed {
     logic [31:0] PC4;
-    logic [31:0] ALUResult;
+//    logic [31:0] ALUResult;
     logic [31:0] PCNext;
     logic [31:0] Address;
     logic [31:0] instr;
@@ -103,6 +103,8 @@ typedef struct packed {
     logic SLTFlagSigned;
     logic SLTFlagUnsigned;
     logic [31:0] Address;
+    logic [4:0] RS1;  // This Added
+    logic [4:0] RS2; // This Added
     logic [31:0] imm;
     logic [31:0] RD2;
     logic SrcBSelect;
@@ -128,8 +130,11 @@ typedef struct packed {
 typedef struct packed {
     logic WE;
     logic Branch_taken;
+    logic Jump;
     logic [31:0] instr;
-    logic [31:0] DataMemoryAddress;
+//    logic [31:0] DataMemoryAddress;
+    logic [4:0] RS1; // This Added
+    logic [4:0] RS2; // This Added
     logic [31:0] FinalDataMemoryRead;
     logic [31:0] WD;
     logic [31:0] ALUResult;

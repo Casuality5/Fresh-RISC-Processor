@@ -3,7 +3,7 @@
 import Pkg::*;
 
 module Fetch #(
-    parameter Size = 32768
+    parameter Size = 4096
 )(
     input logic            clk,
     input logic            rst,
@@ -11,7 +11,7 @@ module Fetch #(
     input PC_Next_Select_Case PCNext_Select,
     input logic [31:0] Target_Address,
     input logic [31:0] ALUResult_to_Fetch,
-    input Execute_Bundle EB,
+//    input Execute_Bundle EB,
     output Fetch_Bundle    FB
 );
 
@@ -22,13 +22,15 @@ logic [31:0] im[Size-1:0];
 assign FB.PC4 = FB.Address + 32'h4;
 
 always_comb begin 
-    FB.PCNext = '0;
+//    FB.PCNext = '0;
     case (PCNext_Select)
         STEP_FORWARD:                       FB.PCNext = FB.PC4;
 
         JUMP_TO_CALCULATED_REGISTER:        FB.PCNext = ALUResult_to_Fetch;
 
         JUMP_TO_LABEL:                      FB.PCNext = Target_Address;
+        
+        default: FB.PCNext = FB.Address; // Changed this
     endcase
 end
 
@@ -43,7 +45,7 @@ always_ff @ (posedge clk or posedge rst) begin
 end
 
 initial begin
-    $readmemh("Program.mem",im);
+    $readmemh("D:/Fresh/Fresh.srcs/sim_1/new/Program.mem",im);
 end
 
 assign instr_out = im[FB.Address[31:2] % Size];
