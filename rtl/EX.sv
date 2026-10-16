@@ -23,7 +23,7 @@ module Execute (
     logic [31:0] jalr_target;
 
     // 1. Result MUX from Memory Stage
-    assign MB_ForwardData = (MB.ResultSelect == RESULT_MEM) ? MB.FinalDataMemoryRead :
+    assign MB_ForwardData = (MB.ResultSelect == RESULT_MEM) ? MB.DataMemoryRead :
                             (MB.ResultSelect == RESULT_PC)  ? MB.PC4 : MB_ALUResult;
 
     // 2. Parallel Target Adders (Calculated outside main ALU - 0 extra logic levels)

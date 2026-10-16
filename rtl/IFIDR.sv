@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 import Pkg::*;
 
 module reg_IF_ID (
@@ -7,6 +9,6 @@ module reg_IF_ID (
 );
     always_ff @(posedge clk or posedge rst) begin
         if (rst || clr) q <= '0;
-        else if (!enableifid)              q <= d;
+        else if (!enableifid) q <= d;
     end
 endmodule

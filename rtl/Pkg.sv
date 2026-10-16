@@ -63,19 +63,25 @@ package Pkg;
         SLTU    =   4'h9
     } ALUControl_Type_Case;
 
+    // Type Aliases for compatibility
+    typedef Result_Mux_Case     result_mux_t;
+    typedef ALU_OP_Case         alu_op_t;
+    typedef PC_Next_Select_Case pc_next_select_t;
+    typedef Imm_Src_Case        imm_src_t;
+    typedef Branch_Types_Case   branch_type_t;
+    typedef Load_Type_Case      load_type_t;
+
 typedef struct packed {
     logic [31:0] PC4;
-//    logic [31:0] ALUResult;
     logic [31:0] PCNext;
     logic [31:0] Address;
     logic [31:0] instr;
-
 } Fetch_Bundle;
 
 typedef struct packed {
-    ALU_OP_Case        ALUOp;
-    Imm_Src_Case       ImmSrc;
-    Result_Mux_Case    ResultSelect;
+    ALU_OP_Case          ALUOp;
+    Imm_Src_Case         ImmSrc;
+    Result_Mux_Case      ResultSelect;
     ALUControl_Type_Case ALUControl;
     logic [31:0] instr;
     logic [31:0] imm;
@@ -103,8 +109,8 @@ typedef struct packed {
     logic SLTFlagSigned;
     logic SLTFlagUnsigned;
     logic [31:0] Address;
-    logic [4:0] RS1;  // This Added
-    logic [4:0] RS2; // This Added
+    logic [4:0] RS1;
+    logic [4:0] RS2;
     logic [31:0] imm;
     logic [31:0] RD2;
     logic SrcBSelect;
@@ -112,9 +118,9 @@ typedef struct packed {
     logic [31:0] PC4;
     logic [4:0] rd;
     logic SrcASelect;
-    ALU_OP_Case        ALUOp;
-    Imm_Src_Case       ImmSrc;
-    Result_Mux_Case    ResultSelect;
+    ALU_OP_Case          ALUOp;
+    Imm_Src_Case         ImmSrc;
+    Result_Mux_Case      ResultSelect;
     ALUControl_Type_Case ALUControl;
     logic RegW;
     logic WE;
@@ -132,22 +138,26 @@ typedef struct packed {
     logic Branch_taken;
     logic Jump;
     logic [31:0] instr;
-//    logic [31:0] DataMemoryAddress;
-    logic [4:0] RS1; // This Added
-    logic [4:0] RS2; // This Added
-    logic [31:0] FinalDataMemoryRead;
+    logic [4:0] RS1;
+    logic [4:0] RS2;
+    logic [31:0] DataMemoryRead;
     logic [31:0] WD;
     logic [31:0] ALUResult;
     logic [31:0] Address;
     logic [31:0] Target_Address;
     logic [4:0] rd;
     logic RegW;
-    Result_Mux_Case    ResultSelect;
+    Result_Mux_Case ResultSelect;
     logic [31:0] PC4;
-    
 } Memory_Bundle;
 
-
-
+typedef struct packed {
+    logic [1:0] Forward_A;
+    logic [1:0] Forward_B;
+    logic Stall_IF;
+    logic Stall_ID;
+    logic Flush_ID;
+    logic Flush_EX;
+} Hazard_Bundle;
 
 endpackage

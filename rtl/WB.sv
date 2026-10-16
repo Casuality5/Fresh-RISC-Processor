@@ -11,7 +11,7 @@ module ResultMux import Pkg::*; (
         WD3 = MB.ALUResult;
         case (MB.ResultSelect)
             RESULT_ALU: WD3 = MB.ALUResult;
-            RESULT_MEM: WD3 = MB.FinalDataMemoryRead;
+            RESULT_MEM: WD3 = MB.DataMemoryRead;
             RESULT_PC:  WD3 = MB.PC4;
             default:    WD3 = MB.ALUResult;
         endcase

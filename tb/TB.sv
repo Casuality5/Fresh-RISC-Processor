@@ -1,107 +1,119 @@
 `timescale 1ns / 1ps
 
-module tb import Pkg::*; ();
+import Pkg::*;
+
+module TB;
     logic clk;
     logic rst;
-    logic WE3_to_testbench;
-    logic [31:0] WD3_to_testbench;
-    logic [4:0] A3_to_testbench;
-    Memory_Bundle wb_in_to_testbench;
-    logic branch_taken_to_testbench;
-    logic regwrite_from_decode_to_testbench;
-    
 
-    // Instantiate your Core
-    Top dut (
-        .clk(clk),
-        .rst(rst),
-        .wb_in_to_testbench(wb_in_to_testbench),
-        .WE3_to_testbench(WE3_to_testbench),
-        .WD3_to_testbench(WD3_to_testbench),
-        .A3_to_testbench(A3_to_testbench),
-        .branch_taken_to_testbench(branch_taken_to_testbench),
-        .regwrite_from_decode_to_testbench(regwrite_from_decode_to_testbench)
-    );
+    // Instantiate Top DUT
+    Top DUT (.clk(clk), .rst(rst));
 
-    // 1. Generate Clock (100MHz)
     always #5 clk = ~clk;
-    
-    integer fd;
-    // 2. The Test Sequence
-    initial begin
-        // Initialize
-        fd = $fopen("C:/Users/creat/Desktop/dut_trace.log", "w");
 
-        $display("File opened");
-        if (fd == 0) begin
-            $display("ERROR: cannot open file");
-            $finish;
+    integer fd;
+    integer debug_fd;
+
+    initial begin
+        fd = $fopen("dut_trace.log", "w");
+        debug_fd = $fopen("my_trace.log", "w");
+
+        $display("==================================================");
+        $display("   STARTING RISC-V + TCORE ACCELERATOR SIMULATION ");
+        $display("==================================================");
+
+        // Populate Matrix A (all 1s) in Data Memory at Source 0x100 (Row 32-35)
+        for (int r = 32; r < 36; r++) begin
+            DUT.DM.dm0[r] = 8'h01; DUT.DM.dm1[r] = 8'h00; // 1
+            DUT.DM.dm2[r] = 8'h01; DUT.DM.dm3[r] = 8'h00; // 1
+            DUT.DM.dm4[r] = 8'h01; DUT.DM.dm5[r] = 8'h00; // 1
+            DUT.DM.dm6[r] = 8'h01; DUT.DM.dm7[r] = 8'h00; // 1
         end
+
+        // Populate Matrix B (all 2s) in Data Memory at Source+64 0x140 (Row 40-43)
+        for (int r = 40; r < 44; r++) begin
+            DUT.DM.dm0[r] = 8'h02; DUT.DM.dm1[r] = 8'h00; // 2
+            DUT.DM.dm2[r] = 8'h02; DUT.DM.dm3[r] = 8'h00; // 2
+            DUT.DM.dm4[r] = 8'h02; DUT.DM.dm5[r] = 8'h00; // 2
+            DUT.DM.dm6[r] = 8'h02; DUT.DM.dm7[r] = 8'h00; // 2
+        end
+
         clk = 0;
         rst = 1;
-        
-        // Hold reset for a few cycles
-        #5;
-        rst = 0;
 
-        // Run for enough time to see the instructions pass through all 5 stages
-        #50000;
-        $fclose(fd);
-        $display("File closed");
-        $display("Simulation Finished. Check the Waveform!");
+        #20;
+        rst = 0;
+        $display("[TB] Reset released. CPU executing MMIO program from Program.mem...");
+
+        // Wait until DMA completes writing back to destination 0x400
+        fork
+            begin
+                wait(DUT.TCORE.dmac.dma_write_done == 1'b1);
+                $display("\n==================================================");
+                $display("   TCORE ACCELERATOR COMPUTATION COMPLETE!        ");
+                $display("==================================================");
+
+                #100;
+                $display("\n[TB] Verification of Output Matrix at Destination 0x400:");
+                for (int i = 0; i < 16; i++) begin
+                    int row_idx = 128 + i; // 0x400 >> 3 = 128
+                    logic signed [63:0] val;
+                    val = {DUT.DM.dm7[row_idx], DUT.DM.dm6[row_idx], DUT.DM.dm5[row_idx], DUT.DM.dm4[row_idx],
+                           DUT.DM.dm3[row_idx], DUT.DM.dm2[row_idx], DUT.DM.dm1[row_idx], DUT.DM.dm0[row_idx]};
+                    $display("   Result Element [%0d] at Address 0x%03h = %0d (Hex: 0x%016h)", i, (128+i)<<3, val, val);
+                end
+            end
+            begin
+                #100000;
+                $display("[TB] Timeout reached after 100us!");
+            end
+        join_any
+
+        if (fd != 0) $fclose(fd);
+        if (debug_fd != 0) $fclose(debug_fd);
+        $display("\nSimulation Finished Successfully!");
         $finish;
     end
+
     always @(posedge clk) begin
-    if (!rst) begin
-        case (wb_in_to_testbench.instr[6:0])
+        if (!rst) begin
+            case (TB.DUT.memwb.q.instr[6:0])
+                7'b0100011: begin
+                    case (TB.DUT.memwb.q.instr[14:12])
+                        3'b000: $fwrite(fd, "%08h mem %08h %02h\n",
+                                TB.DUT.memwb.q.Address,
+                                TB.DUT.memwb.q.ALUResult,
+                                TB.DUT.memwb.q.WD[7:0]);
+                        3'b001: $fwrite(fd, "%08h mem %08h %04h\n",
+                                TB.DUT.memwb.q.Address,
+                                TB.DUT.memwb.q.ALUResult,
+                                TB.DUT.memwb.q.WD[15:0]);
+                        3'b010: $fwrite(fd, "%08h mem %08h %08h\n",
+                                TB.DUT.memwb.q.Address,
+                                TB.DUT.memwb.q.ALUResult,
+                                TB.DUT.memwb.q.WD);
+                    endcase
+                end
 
-            7'b0100011: begin
-                case (wb_in_to_testbench.instr[14:12])
-                    3'b000: $fwrite(fd, "%08h mem %08h %02h\n",   // SB → 2 digits
-                            wb_in_to_testbench.Address,
-                            wb_in_to_testbench.ALUResult,
-                            wb_in_to_testbench.WD[7:0]);
+                7'b0000011:
+                    $fwrite(fd, "%08h %02d %08h mem %08h\n",
+                        TB.DUT.memwb.q.Address,
+                        TB.DUT.memwb.q.rd,
+                        TB.DUT.rm.WD3,
+                        TB.DUT.memwb.q.ALUResult);
 
-                    3'b001: $fwrite(fd, "%08h mem %08h %04h\n",   // SH → 4 digits
-                            wb_in_to_testbench.Address,
-                            wb_in_to_testbench.ALUResult,
-                            wb_in_to_testbench.WD[15:0]);
+                7'b0110011, 7'b0010011, 7'b1100011, 7'b1101111, 7'b1100111, 7'b0110011, 7'b0010111:
+                    if ((TB.DUT.memwb.q.instr == 32'h0000013)||(TB.DUT.memwb.q.instr[6:0] == 7'b1100011)||(TB.DUT.memwb.q.rd == '0))
+                        $fwrite(fd, "%08h\n", TB.DUT.memwb.q.Address);
+                    else
+                        $fwrite(fd, "%08h %02d %08h\n",
+                        TB.DUT.memwb.q.Address,
+                        TB.DUT.memwb.q.rd,
+                        (TB.DUT.memwb.q.RegW ? TB.DUT.rm.WD3 : 32'b0));
 
-                    3'b010: $fwrite(fd, "%08h mem %08h %08h\n",   // SW → 8 digits
-                            wb_in_to_testbench.Address,
-                            wb_in_to_testbench.ALUResult,
-                            wb_in_to_testbench.WD);
-                endcase
-            end
-            
-            7'b0000011:
-                $fwrite(fd, "%08h %02d %08h mem %08h\n",
-                    wb_in_to_testbench.Address,
-                    wb_in_to_testbench.rd,
-                    WD3_to_testbench,
-                    wb_in_to_testbench.ALUResult);
-
-
-
-
-            7'b0110011,   // R-Type
-            7'b0010011,   // I-ALU
-            7'b1100011,   // Branch
-            7'b1101111,   // JAL
-            7'b1100111,   // JALR
-            7'b0110111,   // LUI
-            7'b0010111:   // AUIPC
-
-                if ((wb_in_to_testbench.instr == 32'h0000013)||(wb_in_to_testbench.instr[6:0] == 7'b1100011)||(A3_to_testbench == '0))
-                    $fwrite(fd, "%08h\n",wb_in_to_testbench.Address);
-                else
-                    $fwrite(fd, "%08h %02d %08h\n",
-                    wb_in_to_testbench.Address,
-                    (wb_in_to_testbench.RegW ? wb_in_to_testbench.rd : 5'd0),
-                    (wb_in_to_testbench.RegW ? WD3_to_testbench : 32'b0));
-
-            default: begin end
-        endcase
+                default: begin end
+            endcase
+            $fflush(fd);
+        end
     end
-end
 endmodule
